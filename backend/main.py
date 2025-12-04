@@ -115,10 +115,60 @@ def verify_token():
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "your-openrouter-api-key")
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
+# Image generation is now handled by Gemini (multimodal model)
+
 # LLM Service
 class LLMService:
     @staticmethod
-    async def generate_questions(prompt: str) -> List[dict]:
+    async def generate_image(prompt: str) -> str:
+        """Generate an image using Gemini's multimodal capabilities."""
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "model": "google/gemini-2.0-flash-exp:free",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "You are an expert educational image generator. Create clear, educational diagrams and images based on the given prompt. Return the images which are generated."
+                },
+                {
+                    "role": "user",
+                    "content": f"Generate an educational image for this prompt: {prompt}. Please provide generated images that can be used in a worksheet."
+                }
+            ]
+        }
+        
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(OPENROUTER_API_URL, json=payload, headers=headers)
+                if response.status_code != 200:
+                    print(f"Error generating image with Gemini: {response.text}")
+                    # Return a placeholder URL if image generation fails
+                    return "https://picsum.photos/seed/placeholder/1024/1024.jpg"
+                
+                result = response.json()
+                content = result["choices"][0]["message"]["content"]
+                
+                # Try to extract URL from the response
+                import re
+                url_match = re.search(r'https?://[^\s<>"{}|\\^`\[\]]+', content)
+                if url_match:
+                    image_url = url_match.group(0)
+                    print(f"Generated image URL with Gemini: {image_url}")
+                    return image_url
+                else:
+                    print(f"No URL found in Gemini response: {content}")
+                    return "https://picsum.photos/seed/gemini-fallback/1024/1024.jpg"
+        except Exception as e:
+            print(f"Exception during image generation with Gemini: {str(e)}")
+            # Return a placeholder URL if there's an exception
+            return "https://picsum.photos/seed/gemini-error/1024/1024.jpg"
+    
+    @staticmethod
+    async def generate_questions(prompt: str, generate_real_images: bool = False) -> List[dict]:
         headers = {
             "Authorization": f"Bearer {OPENROUTER_API_KEY}",
             "Content-Type": "application/json"
@@ -150,6 +200,8 @@ class LLMService:
             content = result["choices"][0]["message"]["content"]
             
             print(f"DEBUG: Raw LLM Response: {content}")
+            print(f"DEBUG: Include images flag: {worksheet_request.include_images}")
+            print(f"DEBUG: Generate real images flag: {generate_real_images}")
             
             # Parse the LLM response to extract questions
             # This is a simplified version - in production, you'd want more robust parsing
@@ -163,6 +215,20 @@ class LLMService:
                 # Check if any image-based questions were generated
                 image_questions = [q for q in questions if q.get("type") == "image"]
                 print(f"DEBUG: Found {len(image_questions)} image-based questions")
+                
+                # If generate_real_images is True and there are image-based questions, generate actual images
+                if generate_real_images and image_questions:
+                    for question in image_questions:
+                        if "images" in question and question["images"]:
+                            # Generate actual images for each image description
+                            for i, image_description in enumerate(question["images"]):
+                                # Use the image description directly as the prompt
+                                image_prompt = f"Create a clear, educational image: {image_description}"
+                                print(f"Generating image with Gemini using prompt: {image_prompt}")
+                                
+                                # Generate the actual image using Gemini
+                                actual_image_url = await LLMService.generate_image(image_prompt)
+                                question["images"][i] = actual_image_url
                 
                 return questions
             except json.JSONDecodeError as e:
@@ -389,14 +455,14 @@ async def generate_worksheet(
             "options": ["option1", "option2", "option3", "option4"] (for MCQ and image-based questions),
             "correct_answer": "answer text or option index",
             "explanation": "explanation of the answer",
-            "images": ["https://example.com/image1.jpg"] (include placeholder image URLs if include_images is true),
+            "images": ["https://example.com/image1.jpg"] (for image-based questions, include a brief description of the image to generate),
             "difficulty": "easy" | "medium" | "hard",
             "marks": 1 (or higher)
         }}
         
         Include images: {worksheet_request.include_images}
         
-        {"CRITICAL INSTRUCTION": If include_images is true, you MUST create at least 1-2 image-based questions that require analyzing a diagram, chart, or image. These questions should have "type": "image" and include placeholder image URLs in the "images" field.}
+        {"CRITICAL INSTRUCTION": If include_images is true, you MUST create at least 1-2 image-based questions that require analyzing a diagram, chart, or image. These questions should have "type": "image" and include a detailed description of the educational image to be generated in the "images" field. For example: "A detailed diagram of a plant cell showing all major organelles with labels."}
         
         If include_images is false, generate only regular text-based questions (mcq, short, long).
         
@@ -411,11 +477,12 @@ async def generate_worksheet(
         
         # Generate questions using LLM
         try:
-            generated_questions = await LLMService.generate_questions(prompt)
+            generated_questions = await LLMService.generate_questions(prompt, worksheet_request.generate_real_images)
             print(f"DEBUG: Generated questions data: {generated_questions}")
         except Exception as e:
             print(f"DEBUG: LLM generation failed: {str(e)}")
             print(f"DEBUG: Using fallback mock data for testing")
+            print(f"DEBUG: Include images flag in fallback: {worksheet_request.include_images}")
             # Fallback mock data for testing
             # Include an image-based question if include_images is true
             if worksheet_request.include_images:
@@ -435,7 +502,7 @@ async def generate_worksheet(
                         "options": ["Mitochondria", "Nucleus", "Chloroplast", "Vacuole"],
                         "correct_answer": 2,
                         "explanation": "Chloroplasts are the organelles responsible for photosynthesis in plant cells.",
-                        "images": ["https://example.com/plant-cell.jpg"],
+                        "images": ["A detailed diagram of a plant cell showing all major organelles with clear labels, highlighting the chloroplasts in green."],
                         "difficulty": "medium",
                         "marks": 3
                     },
@@ -474,6 +541,7 @@ async def generate_worksheet(
         # Save generated questions to database
         saved_questions = []
         for idx, q_data in enumerate(generated_questions):
+            print(f"DEBUG: Processing question {idx}: {q_data}")
             try:
                 # Handle different field name variations
                 text = q_data.get("text") or q_data.get("question") or q_data.get("question_text")

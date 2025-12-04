@@ -140,3 +140,4 @@ class WorksheetRequest(BaseModel):
     long_answer_count: int = 0
     difficulty: str = "medium"
     include_images: bool = False
+    generate_real_images: bool = False

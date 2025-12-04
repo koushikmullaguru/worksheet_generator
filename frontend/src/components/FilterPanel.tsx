@@ -28,6 +28,7 @@ export interface WorksheetFilters {
   includeImagesForMCQ?: boolean;
   includeImagesForShort?: boolean;
   includeImagesForLong?: boolean;
+  generateRealImages?: boolean;
 }
 
 export function FilterPanel({ onGenerate }: FilterPanelProps) {
@@ -51,6 +52,7 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
   const [includeImagesForMCQ, setIncludeImagesForMCQ] = useState(false);
   const [includeImagesForShort, setIncludeImagesForShort] = useState(false);
   const [includeImagesForLong, setIncludeImagesForLong] = useState(false);
+  const [generateRealImages, setGenerateRealImages] = useState(false);
 
   // Fetch grades on mount
   useEffect(() => {
@@ -159,6 +161,7 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
       includeImagesForMCQ,
       includeImagesForShort,
       includeImagesForLong,
+      generateRealImages,
     });
   };
 
@@ -172,6 +175,7 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
     setIncludeImagesForMCQ(false);
     setIncludeImagesForShort(false);
     setIncludeImagesForLong(false);
+    setGenerateRealImages(false);
     setDifficulty('medium');
   };
 
@@ -310,7 +314,7 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
         </div>
 
         <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-          <Label>Include Images</Label>
+          <Label>Include Image-based Questions</Label>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
               <Checkbox
@@ -337,6 +341,21 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
               <label htmlFor="images-long" className="text-sm cursor-pointer">For Long Answers</label>
             </div>
           </div>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="generate-real-images"
+                checked={generateRealImages}
+                onCheckedChange={(checked) => setGenerateRealImages(checked as boolean)}
+              />
+              <label htmlFor="generate-real-images" className="text-sm cursor-pointer">Generate actual images using AI</label>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground mt-2">
+            Note: This will generate questions that reference images (diagrams, charts, etc.)
+            with placeholder image URLs that can be replaced with actual images later.
+            If "Generate actual images using AI" is checked, the system will use AI to create real images for image-based questions.
+          </p>
         </div>
       </div>
 

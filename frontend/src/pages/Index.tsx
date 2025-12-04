@@ -48,6 +48,7 @@ const Index = () => {
         longAnswerCount,
         difficulty as 'easy' | 'medium' | 'hard',
         includeImages,
+        filters.generateRealImages || false,
         ''
       );
 

@@ -178,6 +178,7 @@ export async function generateWorksheet(
   longAnswerCount: number,
   difficulty: 'easy' | 'medium' | 'hard' = 'medium',
   includeImages: boolean = false,
+  generateRealImages: boolean = false,
   token: string = ''
 ): Promise<Question[]> {
   const response = await fetch(`${API_BASE_URL}/generate-worksheet`, {
@@ -193,6 +194,7 @@ export async function generateWorksheet(
       long_answer_count: longAnswerCount,
       difficulty,
       include_images: includeImages,
+      generate_real_images: generateRealImages,
     }),
   });
 
