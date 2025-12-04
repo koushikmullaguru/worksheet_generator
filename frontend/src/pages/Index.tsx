@@ -35,6 +35,11 @@ const Index = () => {
       const shortAnswerCount = filters.shortAnswerCount || 0;
       const longAnswerCount = filters.longAnswerCount || 0;
       const difficulty = filters.difficulty || 'medium';
+      
+      // Determine if we should include images based on the question type and user preferences
+      const includeImages = filters.includeImagesForMCQ && mcqCount > 0 ||
+                         filters.includeImagesForShort && shortAnswerCount > 0 ||
+                         filters.includeImagesForLong && longAnswerCount > 0;
 
       const generatedQuestions = await api.generateWorksheet(
         filters.topic,
@@ -42,12 +47,16 @@ const Index = () => {
         shortAnswerCount,
         longAnswerCount,
         difficulty as 'easy' | 'medium' | 'hard',
-        false,
+        includeImages,
         ''
       );
 
       setQuestions(generatedQuestions);
       setIsGenerating(false);
+      
+      // Debug: Log the generated questions
+      console.log("Generated questions:", generatedQuestions);
+      
       toast({
         title: "Worksheet generated",
         description: `${generatedQuestions.length} questions created successfully`,

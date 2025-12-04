@@ -1,6 +1,6 @@
 export interface Question {
   id: string;
-  type: 'mcq' | 'short' | 'long';
+  type: 'mcq' | 'short' | 'long' | 'image';
   text: string;
   options?: string[];
   correct_answer?: number | number[] | string;
@@ -99,12 +99,12 @@ export const subjects: Subject[] = [
   }
 ];
 
-export const questionTypes = ['MCQ', 'Short Answer', 'Image-based'];
+export const questionTypes = ['MCQ', 'Short Answer', 'Long Answer', 'Image-based'];
 
 const sampleQuestions: Question[] = [
   {
     id: 'q-1',
-    type: 'image-based',
+    type: 'image',
     text: 'Observe the diagram of a neuron and identify the parts labeled A, B, and C.',
     options: ['A: Dendrites, B: Cell body, C: Axon', 'A: Axon, B: Dendrites, C: Cell body', 'A: Cell body, B: Axon, C: Dendrites', 'A: Dendrites, B: Axon, C: Cell body'],
     correctAnswer: 0,
@@ -143,7 +143,7 @@ const sampleQuestions: Question[] = [
   },
   {
     id: 'q-5',
-    type: 'image-based',
+    type: 'image',
     text: 'Study the diagram showing a reflex arc. What is the correct pathway of the nerve impulse?',
     options: ['Receptor → Sensory neuron → Brain → Motor neuron → Effector', 'Receptor → Sensory neuron → Spinal cord → Motor neuron → Effector', 'Receptor → Motor neuron → Spinal cord → Sensory neuron → Effector', 'Receptor → Spinal cord → Brain → Effector'],
     correctAnswer: 1,
@@ -155,8 +155,8 @@ const sampleQuestions: Question[] = [
 ];
 
 export function generateQuestions(count: number, types: string[]): Question[] {
-  const filtered = sampleQuestions.filter(q => 
-    types.length === 0 || types.includes(q.type === 'image-based' ? 'Image-based' : q.type === 'mcq' ? 'MCQ' : 'Short Answer')
+  const filtered = sampleQuestions.filter(q =>
+    types.length === 0 || types.includes(q.type === 'image' ? 'Image-based' : q.type === 'mcq' ? 'MCQ' : q.type === 'short' ? 'Short Answer' : 'Long Answer')
   );
   
   const questions: Question[] = [];

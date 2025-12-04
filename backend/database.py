@@ -80,7 +80,7 @@ class Question(Base):
     __tablename__ = "questions"
     
     id = Column(String, primary_key=True, index=True)
-    type = Column(String, index=True)  # mcq, short, long
+    type = Column(String, index=True)  # mcq, short, long, image
     text = Column(Text)
     options = Column(JSON, default=[])
     correct_answer = Column(JSON, default=[])

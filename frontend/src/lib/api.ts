@@ -31,7 +31,7 @@ export interface Topic {
 
 export interface Question {
   id: string;
-  type: 'mcq' | 'short' | 'long';
+  type: 'mcq' | 'short' | 'long' | 'image';
   text: string;
   options?: string[];
   correct_answer?: number | number[] | string;

@@ -18,26 +18,25 @@ export interface WorksheetFilters {
   board: string;
   grade: string;
   subject: string;
-  assessmentType: 'chapter' | 'subtopic';
   chapter: string;
   topic: string;
   questionCount: number;
-  questionTypes: string[];
   difficulty?: 'easy' | 'medium' | 'hard';
   mcqCount?: number;
   shortAnswerCount?: number;
   longAnswerCount?: number;
+  includeImagesForMCQ?: boolean;
+  includeImagesForShort?: boolean;
+  includeImagesForLong?: boolean;
 }
 
 export function FilterPanel({ onGenerate }: FilterPanelProps) {
   const [board, setBoard] = useState('CBSE');
   const [grade, setGrade] = useState('');
   const [subject, setSubject] = useState('');
-  const [assessmentType, setAssessmentType] = useState<'chapter' | 'subtopic'>('chapter');
   const [chapter, setChapter] = useState('');
   const [topic, setTopic] = useState('');
   const [questionCount, setQuestionCount] = useState(5);
-  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
   // API data state
   const [grades, setGrades] = useState<api.Grade[]>([]);
@@ -49,6 +48,9 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
   const [mcqCount, setMcqCount] = useState(0);
   const [shortAnswerCount, setShortAnswerCount] = useState(0);
   const [longAnswerCount, setLongAnswerCount] = useState(0);
+  const [includeImagesForMCQ, setIncludeImagesForMCQ] = useState(false);
+  const [includeImagesForShort, setIncludeImagesForShort] = useState(false);
+  const [includeImagesForLong, setIncludeImagesForLong] = useState(false);
 
   // Fetch grades on mount
   useEffect(() => {
@@ -147,15 +149,16 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
       board,
       grade,
       subject,
-      assessmentType,
       chapter,
       topic,
       questionCount: totalQuestions,
-      questionTypes: selectedTypes,
       difficulty,
       mcqCount,
       shortAnswerCount,
       longAnswerCount,
+      includeImagesForMCQ,
+      includeImagesForShort,
+      includeImagesForLong,
     });
   };
 
@@ -163,17 +166,13 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
     setChapter('');
     setTopic('');
     setQuestionCount(5);
-    setSelectedTypes([]);
     setMcqCount(0);
     setShortAnswerCount(0);
     setLongAnswerCount(0);
+    setIncludeImagesForMCQ(false);
+    setIncludeImagesForShort(false);
+    setIncludeImagesForLong(false);
     setDifficulty('medium');
-  };
-
-  const toggleQuestionType = (type: string) => {
-    setSelectedTypes(prev => 
-      prev.includes(type) ? prev.filter(t => t !== type) : [...prev, type]
-    );
   };
 
   return (
@@ -224,16 +223,6 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
               ))}
             </SelectContent>
           </Select>
-        </div>
-
-        <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-          <Label>Assessment Type</Label>
-          <Tabs value={assessmentType} onValueChange={(v) => setAssessmentType(v as 'chapter' | 'subtopic')}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="chapter">Chapter</TabsTrigger>
-              <TabsTrigger value="subtopic">Subtopic</TabsTrigger>
-            </TabsList>
-          </Tabs>
         </div>
 
         <div className="space-y-2 sm:col-span-2 lg:col-span-1">
@@ -321,18 +310,32 @@ export function FilterPanel({ onGenerate }: FilterPanelProps) {
         </div>
 
         <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-          <Label>Question Types</Label>
+          <Label>Include Images</Label>
           <div className="space-y-2">
-            {questionTypes.map(type => (
-              <div key={type} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={type}
-                  checked={selectedTypes.includes(type)}
-                  onCheckedChange={() => toggleQuestionType(type)}
-                />
-                <label htmlFor={type} className="text-sm cursor-pointer">{type}</label>
-              </div>
-            ))}
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="images-mcq"
+                checked={includeImagesForMCQ}
+                onCheckedChange={(checked) => setIncludeImagesForMCQ(checked as boolean)}
+              />
+              <label htmlFor="images-mcq" className="text-sm cursor-pointer">For MCQs</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="images-short"
+                checked={includeImagesForShort}
+                onCheckedChange={(checked) => setIncludeImagesForShort(checked as boolean)}
+              />
+              <label htmlFor="images-short" className="text-sm cursor-pointer">For Short Answers</label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="images-long"
+                checked={includeImagesForLong}
+                onCheckedChange={(checked) => setIncludeImagesForLong(checked as boolean)}
+              />
+              <label htmlFor="images-long" className="text-sm cursor-pointer">For Long Answers</label>
+            </div>
           </div>
         </div>
       </div>

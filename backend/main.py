@@ -125,7 +125,7 @@ class LLMService:
         }
         
         payload = {
-            "model": "openai/gpt-oss-20b:free",
+            "model": "google/gemini-2.0-flash-exp:free",
             "messages": [
                 {
                     "role": "system",
@@ -154,10 +154,16 @@ class LLMService:
             # Parse the LLM response to extract questions
             # This is a simplified version - in production, you'd want more robust parsing
             try:
+                # First, try to parse the entire content as JSON
                 questions = json.loads(content)
                 print(f"DEBUG: Successfully parsed JSON. Questions count: {len(questions) if isinstance(questions, list) else 1}")
                 if isinstance(questions, dict):
                     questions = [questions]
+                
+                # Check if any image-based questions were generated
+                image_questions = [q for q in questions if q.get("type") == "image"]
+                print(f"DEBUG: Found {len(image_questions)} image-based questions")
+                
                 return questions
             except json.JSONDecodeError as e:
                 print(f"DEBUG: JSON parse error: {str(e)}")
@@ -188,6 +194,12 @@ class LLMService:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail=f"Failed to parse LLM response. Raw response: {content[:200]}"
+                )
+            except Exception as e:
+                print(f"DEBUG: Unexpected error during JSON parsing: {str(e)}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f"Unexpected error during JSON parsing: {str(e)}"
                 )
 
 # API Endpoints
@@ -372,22 +384,28 @@ async def generate_worksheet(
         
         For each question, provide the following JSON structure (IMPORTANT):
         {{
-            "type": "mcq" | "short" | "long",
+            "type": "mcq" | "short" | "long" | "image",
             "text": "The question text here",
-            "options": ["option1", "option2", "option3", "option4"] (for MCQ only),
+            "options": ["option1", "option2", "option3", "option4"] (for MCQ and image-based questions),
             "correct_answer": "answer text or option index",
             "explanation": "explanation of the answer",
+            "images": ["https://example.com/image1.jpg"] (include placeholder image URLs if include_images is true),
             "difficulty": "easy" | "medium" | "hard",
             "marks": 1 (or higher)
         }}
         
         Include images: {worksheet_request.include_images}
         
-        IMPORTANT: Respond with ONLY a valid JSON array of question objects, nothing else.
+        {"CRITICAL INSTRUCTION": If include_images is true, you MUST create at least 1-2 image-based questions that require analyzing a diagram, chart, or image. These questions should have "type": "image" and include placeholder image URLs in the "images" field.}
+        
+        If include_images is false, generate only regular text-based questions (mcq, short, long).
+        
+        {"MANDATORY FORMAT": Respond with ONLY a valid JSON array of question objects, nothing else.}
         Example format:
         [
             {{"type": "mcq", "text": "Question 1?", "options": ["A", "B", "C", "D"], "correct_answer": 0, "explanation": "Because...", "difficulty": "easy", "marks": 1}},
-            {{"type": "short", "text": "Question 2?", "options": [], "correct_answer": "answer", "explanation": "Because...", "difficulty": "medium", "marks": 2}}
+            {{"type": "image", "text": "Analyze the diagram and answer:", "options": ["Option A", "Option B", "Option C", "Option D"], "correct_answer": 0, "explanation": "Because...", "images": ["https://example.com/diagram.jpg"], "difficulty": "medium", "marks": 3}},
+            {{"type": "short", "text": "Question 3?", "options": [], "correct_answer": "answer", "explanation": "Because...", "difficulty": "medium", "marks": 2}}
         ]
         """
         
@@ -399,26 +417,59 @@ async def generate_worksheet(
             print(f"DEBUG: LLM generation failed: {str(e)}")
             print(f"DEBUG: Using fallback mock data for testing")
             # Fallback mock data for testing
-            generated_questions = [
-                {
-                    "type": "mcq",
-                    "text": "What is the capital of France?",
-                    "options": ["London", "Berlin", "Paris", "Madrid"],
-                    "correct_answer": 2,
-                    "explanation": "Paris is the capital of France.",
-                    "difficulty": "easy",
-                    "marks": 1
-                },
-                {
-                    "type": "short",
-                    "text": "Define photosynthesis.",
-                    "options": [],
-                    "correct_answer": "Process by which plants convert light into chemical energy",
-                    "explanation": "Photosynthesis is the process where plants use sunlight to produce glucose.",
-                    "difficulty": "medium",
-                    "marks": 2
-                }
-            ]
+            # Include an image-based question if include_images is true
+            if worksheet_request.include_images:
+                generated_questions = [
+                    {
+                        "type": "mcq",
+                        "text": "What is the capital of France?",
+                        "options": ["London", "Berlin", "Paris", "Madrid"],
+                        "correct_answer": 2,
+                        "explanation": "Paris is the capital of France.",
+                        "difficulty": "easy",
+                        "marks": 1
+                    },
+                    {
+                        "type": "image",
+                        "text": "Analyze the diagram of a plant cell and identify the organelle responsible for photosynthesis.",
+                        "options": ["Mitochondria", "Nucleus", "Chloroplast", "Vacuole"],
+                        "correct_answer": 2,
+                        "explanation": "Chloroplasts are the organelles responsible for photosynthesis in plant cells.",
+                        "images": ["https://example.com/plant-cell.jpg"],
+                        "difficulty": "medium",
+                        "marks": 3
+                    },
+                    {
+                        "type": "short",
+                        "text": "Define photosynthesis.",
+                        "options": [],
+                        "correct_answer": "Process by which plants convert light into chemical energy",
+                        "explanation": "Photosynthesis is the process where plants use sunlight to produce glucose.",
+                        "difficulty": "medium",
+                        "marks": 2
+                    }
+                ]
+            else:
+                generated_questions = [
+                    {
+                        "type": "mcq",
+                        "text": "What is the capital of France?",
+                        "options": ["London", "Berlin", "Paris", "Madrid"],
+                        "correct_answer": 2,
+                        "explanation": "Paris is the capital of France.",
+                        "difficulty": "easy",
+                        "marks": 1
+                    },
+                    {
+                        "type": "short",
+                        "text": "Define photosynthesis.",
+                        "options": [],
+                        "correct_answer": "Process by which plants convert light into chemical energy",
+                        "explanation": "Photosynthesis is the process where plants use sunlight to produce glucose.",
+                        "difficulty": "medium",
+                        "marks": 2
+                    }
+                ]
         
         # Save generated questions to database
         saved_questions = []

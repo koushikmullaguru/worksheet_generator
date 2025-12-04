@@ -27,6 +27,9 @@ export function QuestionCard({ question, index, showAnswers, onRegenerate, onUpd
   const [isEditing, setIsEditing] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   const [editData, setEditData] = useState(question);
+  
+  // Debug: Log question data
+  console.log(`Question ${index + 1} data:`, question);
 
   const {
     attributes,
@@ -57,6 +60,7 @@ export function QuestionCard({ question, index, showAnswers, onRegenerate, onUpd
       case 'mcq': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
       case 'short': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
       case 'long': return 'bg-amber-500/10 text-amber-500 border-amber-500/20';
+      case 'image': return 'bg-green-500/10 text-green-500 border-green-500/20';
       default: return '';
     }
   };
@@ -66,6 +70,7 @@ export function QuestionCard({ question, index, showAnswers, onRegenerate, onUpd
       case 'mcq': return 'MCQ';
       case 'short': return 'Short Answer';
       case 'long': return 'Long Answer';
+      case 'image': return 'Image-based';
       default: return type;
     }
   };
@@ -166,12 +171,12 @@ export function QuestionCard({ question, index, showAnswers, onRegenerate, onUpd
                   <p className="text-foreground leading-relaxed">{question.text}</p>
 
                   {question.images && question.images.length > 0 && (
-                    <div 
+                    <div
                       className="relative w-40 h-24 rounded-lg overflow-hidden border border-border cursor-pointer hover:ring-2 hover:ring-primary transition-all"
                       onClick={() => setImageOpen(true)}
                     >
-                      <img 
-                        src={question.images[0]} 
+                      <img
+                        src={question.images[0]}
                         alt="Question diagram"
                         className="w-full h-full object-cover"
                       />
@@ -181,7 +186,7 @@ export function QuestionCard({ question, index, showAnswers, onRegenerate, onUpd
                     </div>
                   )}
 
-                  {question.options && (
+                  {(question.options && question.options.length > 0) && (
                     <div className="space-y-2 pl-4">
                       {question.options.map((option, i) => (
                         <div key={i} className="flex items-start gap-2">
@@ -208,13 +213,15 @@ export function QuestionCard({ question, index, showAnswers, onRegenerate, onUpd
                             exit={{ opacity: 0, height: 0 }}
                             className="mt-4 p-4 bg-muted/30 rounded-lg space-y-3"
                           >
-                            {question.correctAnswer !== undefined && (
+                            {question.correct_answer !== undefined && (
                               <div>
                                 <span className="font-semibold text-primary">Correct Answer: </span>
-                                {Array.isArray(question.correctAnswer) ? (
-                                  <span>{question.correctAnswer.map(i => String.fromCharCode(65 + i)).join(', ')}</span>
+                                {Array.isArray(question.correct_answer) ? (
+                                  <span>{question.correct_answer.map(i => String.fromCharCode(65 + i)).join(', ')}</span>
+                                ) : typeof question.correct_answer === 'number' ? (
+                                  <span>{question.options?.[question.correct_answer]}</span>
                                 ) : (
-                                  <span>{question.options?.[question.correctAnswer]}</span>
+                                  <span>{question.correct_answer}</span>
                                 )}
                               </div>
                             )}

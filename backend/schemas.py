@@ -91,7 +91,7 @@ class Topic(TopicBase):
 
 # Question schemas
 class QuestionBase(BaseModel):
-    type: str  # mcq, short, long
+    type: str  # mcq, short, long, image
     text: str
     options: List[str] = []
     # Allow correct_answer to be an index (int), list of indices, or a string answer
