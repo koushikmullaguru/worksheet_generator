@@ -141,3 +141,4 @@ class WorksheetRequest(BaseModel):
     difficulty: str = "medium"
     include_images: bool = False
     generate_real_images: bool = False
+    subject_name: str = ""  # New field for subject-specific LLM selection
