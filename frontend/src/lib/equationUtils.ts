@@ -4,7 +4,7 @@ import "katex/dist/katex.min.css";
 /**
  * Renders mathematical equations in LaTeX format using KaTeX
  * @param text - The text that may contain LaTeX equations
- * @returns HTML string with rendered equations
+ * @returns
  */
 export function renderEquations(text: string): string {
   if (!text) return '';

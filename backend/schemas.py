@@ -132,13 +132,38 @@ class Worksheet(WorksheetBase):
     class Config:
         from_attributes = True
 
-# Worksheet request schema
-class WorksheetRequest(BaseModel):
-    topic_id: str
-    mcq_count: int = 0
-    short_answer_count: int = 0
-    long_answer_count: int = 0
+# --- Assessment Generation Request Models (NEW/MODIFIED) ---
+
+class BaseGenerationRequest(BaseModel):
+    """Base class defining common parameters for all content generation."""
+    mcq_count: int = 2
+    short_answer_count: int = 2
+    long_answer_count: int = 1
     difficulty: str = "medium"
+    subject_name: Optional[str] = ""
     include_images: bool = False
     generate_real_images: bool = False
-    subject_name: str = ""  # New field for subject-specific LLM selection
+    
+
+# 1. Worksheet Request (Standard practice tool, single topic)
+class WorksheetRequest(BaseGenerationRequest):
+    topic_id: str
+
+# 2. Quiz Request (Short, Focused, MCQ Heavy)
+class QuizRequest(BaseGenerationRequest):
+    topic_id: str
+    # Overriding defaults for Quiz characteristics:
+    mcq_count: int = 5
+    short_answer_count: int = 1
+    long_answer_count: int = 0  # Typically no long answers
+    difficulty: str = "easy"
+
+# 3. Exam Request (Long, Comprehensive, Multi-Topic)
+class ExamRequest(BaseGenerationRequest):
+    topic_ids: List[str] # KEY DIFFERENCE: List of topic IDs for broad scope
+    # Overriding defaults for Exam characteristics:
+    mcq_count: int = 10
+    short_answer_count: int = 5
+    long_answer_count: int = 3
+    difficulty: str = "hard" # Higher default difficulty
+    name: str = "Generated Exam"
