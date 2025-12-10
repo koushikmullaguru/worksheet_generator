@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
-import { BookOpen, Sparkles } from "lucide-react";
+import { BookOpen, Sparkles, FileText, FileCheck } from "lucide-react";
 import { motion } from "framer-motion";
+import { NavLink } from "./NavLink";
 
 export function Header() {
   return (
@@ -17,13 +18,30 @@ export function Header() {
         </div>
 
         <nav className="hidden md:flex items-center gap-6">
-          <Button variant="ghost" size="sm" className="gap-2">
+          <NavLink
+            to="/"
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
+            activeClassName="bg-primary text-primary-foreground"
+          >
+            <FileText className="h-4 w-4" />
+            Worksheets
+          </NavLink>
+          <NavLink
+            to="/quiz"
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
+            activeClassName="bg-primary text-primary-foreground"
+          >
             <Sparkles className="h-4 w-4" />
-            AI Assistant
-          </Button>
-          <Button variant="ghost" size="sm">
-            Everyday AI
-          </Button>
+            Quiz
+          </NavLink>
+          <NavLink
+            to="/exam"
+            className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors text-muted-foreground hover:text-foreground hover:bg-accent"
+            activeClassName="bg-primary text-primary-foreground"
+          >
+            <FileCheck className="h-4 w-4" />
+            Exam
+          </NavLink>
         </nav>
 
         <div className="flex items-center gap-3">

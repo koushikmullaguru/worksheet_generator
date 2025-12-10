@@ -32,9 +32,10 @@ interface ResultsPanelProps {
   topicId?: string;
   onQuestionsChange: (questions: api.Question[]) => void;
   isLoading?: boolean;
+  contentType?: 'worksheet' | 'quiz' | 'exam';
 }
 
-export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isLoading }: ResultsPanelProps) {
+export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isLoading, contentType = 'worksheet' }: ResultsPanelProps) {
   const [showAnswers, setShowAnswers] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -89,7 +90,7 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
     try {
       const sanitizedTopic = topic.replace(/[^a-z0-9]/gi, '_').toLowerCase();
       const timestamp = new Date().toISOString().slice(0, 10);
-      const filename = `worksheet_${sanitizedTopic}_${timestamp}`;
+      const filename = `${contentType}_${sanitizedTopic}_${timestamp}`;
 
       await exportUtils.exportWorksheet(
         topic,
@@ -103,14 +104,14 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
 
       toast({
         title: "Export successful",
-        description: `Worksheet exported as ${exportFormat.toUpperCase()}`,
+        description: `${contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'} exported as ${exportFormat.toUpperCase()}`,
       });
       setExportDialogOpen(false);
     } catch (error) {
       console.error('Export error:', error);
       toast({
         title: "Export failed",
-        description: error instanceof Error ? error.message : 'Failed to export worksheet',
+        description: error instanceof Error ? error.message : `Failed to export ${contentType === 'worksheet' ? 'worksheet' : contentType === 'quiz' ? 'quiz' : 'exam'}`,
         variant: "destructive",
       });
     } finally {
@@ -151,16 +152,16 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
       await api.saveWorksheet(worksheetName, topicId, questionIds, '');
       
       toast({
-        title: "Worksheet saved",
+        title: `${contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'} saved`,
         description: `"${worksheetName}" has been saved to your library`,
       });
       setSaveDialogOpen(false);
       setWorksheetName('');
     } catch (error) {
-      console.error('Error saving worksheet:', error);
+      console.error(`Error saving ${contentType}:`, error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : 'Failed to save worksheet',
+        description: error instanceof Error ? error.message : `Failed to save ${contentType === 'worksheet' ? 'worksheet' : contentType === 'quiz' ? 'quiz' : 'exam'}`,
         variant: "destructive",
       });
     } finally {
@@ -169,17 +170,22 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
   };
 
   if (questions.length === 0) {
+    const contentTypeText = contentType === 'worksheet' ? 'Worksheet' :
+                          contentType === 'quiz' ? 'Quiz' : 'Exam';
+    const generateText = contentType === 'worksheet' ? 'worksheet' :
+                        contentType === 'quiz' ? 'quiz' : 'exam';
+    
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         className="flex items-center justify-center h-full p-12 text-center"
       >
         <div className="space-y-4 max-w-md">
           <FileText className="h-16 w-16 mx-auto text-muted-foreground" />
-          <h3 className="text-xl font-semibold">No Worksheet Generated</h3>
+          <h3 className="text-xl font-semibold">No {contentTypeText} Generated</h3>
           <p className="text-muted-foreground">
-            Select your preferences from the filter panel and click Generate to create a custom worksheet.
+            Select your preferences from the filter panel and click Generate to create a custom {generateText}.
           </p>
         </div>
       </motion.div>
@@ -195,9 +201,9 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-bold">{topic || 'Generated Worksheet'}</h2>
+            <h2 className="text-2xl font-bold">{topic || `Generated ${contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'}`}</h2>
             <p className="text-sm text-muted-foreground">
-              {questions.length} question{questions.length > 1 ? 's' : ''} • 
+              {questions.length} question{questions.length > 1 ? 's' : ''} •
               Total marks: {questions.reduce((sum, q) => sum + q.marks, 0)}
             </p>
           </div>
@@ -227,7 +233,7 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
           </Button>
           <Button variant="outline" onClick={() => setSaveDialogOpen(true)}>
             <Save className="h-4 w-4 mr-2" />
-            Save Worksheet
+            Save {contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'}
           </Button>
         </div>
       </motion.div>
@@ -259,14 +265,14 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Save Worksheet</DialogTitle>
+            <DialogTitle>Save {contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Worksheet Name</Label>
+              <Label htmlFor="name">{contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'} Name</Label>
               <Input
                 id="name"
-                placeholder="e.g., Control and Coordination - Practice Set 1"
+                placeholder={`e.g., Control and Coordination - ${contentType === 'worksheet' ? 'Practice Set 1' : contentType === 'quiz' ? 'Quiz 1' : 'Final Exam'}`}
                 value={worksheetName}
                 onChange={(e) => setWorksheetName(e.target.value)}
               />
@@ -286,7 +292,7 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
       <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Export Worksheet</DialogTitle>
+            <DialogTitle>Export {contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

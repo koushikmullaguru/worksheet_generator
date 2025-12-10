@@ -134,7 +134,7 @@ class LLMService:
         "Biology": "mistralai/mistral-7b-instruct:free",
         "Mathematics": "meta-llama/llama-3.3-70b-instruct:free",
         "Chemistry": "openai/gpt-oss-20b:free",
-        "Physics": "google/gemma-3-27b-it:free",
+        "Physics": "openai/gpt-oss-20b:free",
     }
     DEFAULT_MODEL = "google/gemini-2.0-flash-exp:free"
 

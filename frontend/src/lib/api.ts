@@ -324,3 +324,75 @@ export async function deleteWorksheet(
 
   return response.json();
 }
+
+// Quiz APIs
+export async function generateQuiz(
+  topicId: string,
+  mcqCount: number = 5,
+  shortAnswerCount: number = 1,
+  longAnswerCount: number = 0,
+  difficulty: 'easy' | 'medium' | 'hard' = 'easy',
+  includeImages: boolean = false,
+  subjectName: string = '',
+  token: string = ''
+): Promise<Question[]> {
+  const response = await fetch(`${API_BASE_URL}/generate-quiz`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+    body: JSON.stringify({
+      topic_id: topicId,
+      mcq_count: mcqCount,
+      short_answer_count: shortAnswerCount,
+      long_answer_count: longAnswerCount,
+      difficulty,
+      include_images: includeImages,
+      subject_name: subjectName,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to generate quiz');
+  }
+
+  return response.json();
+}
+
+// Exam APIs
+export async function generateExam(
+  topicIds: string[],
+  mcqCount: number = 10,
+  shortAnswerCount: number = 5,
+  longAnswerCount: number = 3,
+  difficulty: 'easy' | 'medium' | 'hard' = 'hard',
+  includeImages: boolean = false,
+  subjectName: string = '',
+  token: string = ''
+): Promise<Question[]> {
+  const response = await fetch(`${API_BASE_URL}/generate-exam`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` }),
+    },
+    body: JSON.stringify({
+      topic_ids: topicIds,
+      mcq_count: mcqCount,
+      short_answer_count: shortAnswerCount,
+      long_answer_count: longAnswerCount,
+      difficulty,
+      include_images: includeImages,
+      subject_name: subjectName,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.detail || 'Failed to generate exam');
+  }
+
+  return response.json();
+}

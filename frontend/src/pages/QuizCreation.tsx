@@ -1,0 +1,114 @@
+import { useState, useEffect } from "react";
+import { Header } from "../components/Header";
+import { QuizFilterPanel, QuizFilters } from "../components/QuizFilterPanel";
+import { ResultsPanel } from "../components/ResultsPanel";
+import { useToast } from "../hooks/use-toast";
+import * as api from "../lib/api";
+
+const QuizCreation = () => {
+  const [questions, setQuestions] = useState<api.Question[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [currentTopic, setCurrentTopic] = useState<string>('');
+  const [currentTopicId, setCurrentTopicId] = useState<string>('');
+  const { toast } = useToast();
+
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+  }, []);
+
+  const handleGenerate = async (filters: QuizFilters) => {
+    setIsGenerating(true);
+    toast({
+      title: "Generating quiz",
+      description: "Creating questions based on your filters...",
+    });
+
+    try {
+      // Get the topic name from the API
+      const topicsData = await api.getTopics(filters.chapter);
+      const selectedTopic = topicsData.find(t => t.id === filters.topic);
+      setCurrentTopic(selectedTopic?.name || 'Generated Quiz');
+      setCurrentTopicId(filters.topic);
+
+      // Generate quiz from backend API
+      const mcqCount = filters.mcqCount || 5; // Default to 5 MCQs for quizzes
+      const shortAnswerCount = 0; // No short answers for quizzes
+      const longAnswerCount = 0; // No long answers for quizzes
+      const difficulty = filters.difficulty || 'easy'; // Default to easy difficulty for quizzes
+      
+      // Determine if we should include images based on the question type and user preferences
+      const includeImages = filters.includeImagesForMCQ && mcqCount > 0;
+
+      // Get the subject name
+      let subjectName = '';
+      if (selectedTopic) {
+        const chaptersData = await api.getChapters(selectedTopic.chapter_id);
+        const selectedChapter = chaptersData.find(c => c.id === selectedTopic.chapter_id);
+        
+        if (selectedChapter) {
+          const subjectsData = await api.getSubjects();
+          const selectedSubject = subjectsData.find(s => s.id === selectedChapter.subject_id);
+          
+          if (selectedSubject) {
+            subjectName = selectedSubject.name;
+          }
+        }
+      }
+      
+      const generatedQuestions = await api.generateQuiz(
+        filters.topic,
+        mcqCount,
+        shortAnswerCount,
+        longAnswerCount,
+        difficulty as 'easy' | 'medium' | 'hard',
+        includeImages,
+        subjectName,
+        '' // This is the 8th and final argument (the optional 'token' string).
+      );
+
+      setQuestions(generatedQuestions);
+      setIsGenerating(false);
+      
+      // Debug: Log the generated questions
+      console.log("Generated quiz questions:", generatedQuestions);
+      
+      toast({
+        title: "Quiz generated",
+        description: `${generatedQuestions.length} questions created successfully`,
+      });
+    } catch (error) {
+      console.error('Error generating quiz:', error);
+      setIsGenerating(false);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to generate quiz',
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <Header />
+      
+      <div className="flex-1 flex flex-col lg:flex-row">
+        <aside className="w-full lg:w-80 xl:w-96 flex-shrink-0">
+          <QuizFilterPanel onGenerate={handleGenerate} />
+        </aside>
+        
+        <main className="flex-1 overflow-auto scrollbar-thin">
+          <ResultsPanel
+            questions={questions}
+            topic={currentTopic}
+            topicId={currentTopicId}
+            onQuestionsChange={setQuestions}
+            isLoading={isGenerating}
+            contentType="quiz"
+          />
+        </main>
+      </div>
+    </div>
+  );
+};
+
+export default QuizCreation;
