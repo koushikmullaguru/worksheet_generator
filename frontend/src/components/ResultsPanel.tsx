@@ -33,9 +33,20 @@ interface ResultsPanelProps {
   onQuestionsChange: (questions: api.Question[]) => void;
   isLoading?: boolean;
   contentType?: 'worksheet' | 'quiz' | 'exam';
+  quizMode?: boolean;
+  onSubmitQuiz?: (worksheetId: string, answers: api.QuizAnswerCreate[]) => void;
 }
 
-export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isLoading, contentType = 'worksheet' }: ResultsPanelProps) {
+export function ResultsPanel({
+  questions,
+  topic,
+  topicId,
+  onQuestionsChange,
+  isLoading,
+  contentType = 'worksheet',
+  quizMode = false,
+  onSubmitQuiz
+}: ResultsPanelProps) {
   const [showAnswers, setShowAnswers] = useState(false);
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -44,6 +55,8 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
   const [isExporting, setIsExporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'pdf' | 'txt'>('pdf');
   const [exportIncludeAnswers, setExportIncludeAnswers] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<Record<string, api.QuizAnswerCreate>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
   const sensors = useSensors(
@@ -83,6 +96,50 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
       title: "Question updated",
       description: "Changes saved successfully",
     });
+  };
+
+  const handleAnswerSelect = (questionId: string, answer: number | number[] | string) => {
+    setUserAnswers(prev => ({
+      ...prev,
+      [questionId]: {
+        question_id: questionId,
+        worksheet_id: topicId,
+        user_answer: answer
+      }
+    }));
+  };
+
+  const handleSubmitQuiz = async () => {
+    if (!topicId || !onSubmitQuiz) return;
+    
+    setIsSubmitting(true);
+    try {
+      const answers = Object.values(userAnswers);
+      if (answers.length !== questions.length) {
+        toast({
+          title: "Incomplete quiz",
+          description: "Please answer all questions before submitting",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      await onSubmitQuiz(topicId, answers);
+      toast({
+        title: "Quiz submitted",
+        description: "Your answers have been recorded",
+      });
+    } catch (error) {
+      console.error('Error submitting quiz:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : 'Failed to submit quiz',
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleExport = async () => {
@@ -231,6 +288,11 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
             <Printer className="h-4 w-4 mr-2" />
             Print
           </Button>
+          {quizMode && onSubmitQuiz && (
+            <Button onClick={handleSubmitQuiz} disabled={isSubmitting || Object.keys(userAnswers).length < questions.length}>
+              {isSubmitting ? 'Submitting...' : 'Submit Quiz'}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setSaveDialogOpen(true)}>
             <Save className="h-4 w-4 mr-2" />
             Save {contentType === 'worksheet' ? 'Worksheet' : contentType === 'quiz' ? 'Quiz' : 'Exam'}
@@ -256,6 +318,9 @@ export function ResultsPanel({ questions, topic, topicId, onQuestionsChange, isL
                 showAnswers={showAnswers}
                 onRegenerate={handleRegenerate}
                 onUpdate={handleUpdate}
+                onAnswerSelect={quizMode ? handleAnswerSelect : undefined}
+                userAnswer={userAnswers[question.id]?.user_answer}
+                quizMode={quizMode}
               />
             ))}
           </div>

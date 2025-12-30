@@ -10,6 +10,8 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Textarea } from "./ui/textarea";
 import { Label } from "./ui/label";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Checkbox } from "./ui/checkbox";
 import {
   ChevronDown,
   Edit2,
@@ -31,6 +33,9 @@ interface QuestionCardProps {
   showAnswers: boolean;
   onRegenerate: (id: string) => void;
   onUpdate: (id: string, updates: Partial<api.Question>) => void;
+  onAnswerSelect?: (questionId: string, answer: number | number[] | string) => void;
+  userAnswer?: number | number[] | string;
+  quizMode?: boolean;
 }
 
 export function QuestionCard({
@@ -39,16 +44,31 @@ export function QuestionCard({
   showAnswers,
   onRegenerate,
   onUpdate,
+  onAnswerSelect,
+  userAnswer,
+  quizMode = false,
 }: QuestionCardProps) {
   const [isOpen, setIsOpen] = useState(showAnswers);
   const [isEditing, setIsEditing] = useState(false);
   const [imageOpen, setImageOpen] = useState(false);
   const [editData, setEditData] = useState(question);
+  const [selectedAnswer, setSelectedAnswer] = useState<number | number[] | string | null>(userAnswer || null);
+  const [textAnswer, setTextAnswer] = useState<string>('');
 
   // Keep collapsible in sync with "Show answers" toggle
   useEffect(() => {
     setIsOpen(showAnswers);
   }, [showAnswers]);
+
+  // Sync userAnswer prop with selectedAnswer state
+  useEffect(() => {
+    if (userAnswer !== undefined) {
+      setSelectedAnswer(userAnswer);
+      if (typeof userAnswer === 'string') {
+        setTextAnswer(userAnswer);
+      }
+    }
+  }, [userAnswer]);
 
   // Debug: Log question data
   console.log(`Question ${index + 1} data:`, question);
@@ -65,6 +85,21 @@ export function QuestionCard({
   const handleSave = () => {
     onUpdate(question.id, editData);
     setIsEditing(false);
+  };
+
+  const handleAnswerSelect = (answer: number | number[] | string) => {
+    setSelectedAnswer(answer);
+    if (onAnswerSelect) {
+      onAnswerSelect(question.id, answer);
+    }
+  };
+
+  const handleTextAnswerChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setTextAnswer(value);
+    if (onAnswerSelect) {
+      onAnswerSelect(question.id, value);
+    }
   };
 
   const getTypeColor = (type: string) => {
@@ -310,16 +345,93 @@ export function QuestionCard({
                     <div className="space-y-2 pl-4">
                       {question.options.map((option, i) => (
                         <div key={i} className="flex items-start gap-2">
-                          <span className="text-muted-foreground min-w-[20px]">
-                            {String.fromCharCode(65 + i)}.
-                          </span>
-                          <span
-                            dangerouslySetInnerHTML={{
-                              __html: renderAllEquations(option),
-                            }}
-                          />
+                          {quizMode ? (
+                            question.type === "mcq" ? (
+                              <div className="flex items-center space-x-2">
+                                <RadioGroup
+                                  value={selectedAnswer?.toString()}
+                                  onValueChange={(value) => handleAnswerSelect(parseInt(value))}
+                                >
+                                  <div className="flex items-center space-x-2">
+                                    <RadioGroupItem value={i.toString()} id={`option-${i}`} />
+                                    <Label htmlFor={`option-${i}`} className="flex items-start gap-2">
+                                      <span className="text-muted-foreground min-w-[20px]">
+                                        {String.fromCharCode(65 + i)}.
+                                      </span>
+                                      <span
+                                        dangerouslySetInnerHTML={{
+                                          __html: renderAllEquations(option),
+                                        }}
+                                      />
+                                    </Label>
+                                  </div>
+                                </RadioGroup>
+                              </div>
+                            ) : (
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`option-${i}`}
+                                  checked={
+                                    Array.isArray(selectedAnswer) && selectedAnswer.includes(i)
+                                  }
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      const currentAnswers = Array.isArray(selectedAnswer)
+                                        ? [...selectedAnswer]
+                                        : [];
+                                      if (!currentAnswers.includes(i)) {
+                                        handleAnswerSelect([...currentAnswers, i]);
+                                      }
+                                    } else {
+                                      const currentAnswers = Array.isArray(selectedAnswer)
+                                        ? selectedAnswer.filter(a => a !== i)
+                                        : [];
+                                      handleAnswerSelect(currentAnswers);
+                                    }
+                                  }}
+                                />
+                                <Label htmlFor={`option-${i}`} className="flex items-start gap-2">
+                                  <span className="text-muted-foreground min-w-[20px]">
+                                    {String.fromCharCode(65 + i)}.
+                                  </span>
+                                  <span
+                                    dangerouslySetInnerHTML={{
+                                      __html: renderAllEquations(option),
+                                    }}
+                                  />
+                                </Label>
+                              </div>
+                            )
+                          ) : (
+                            <>
+                              <span className="text-muted-foreground min-w-[20px]">
+                                {String.fromCharCode(65 + i)}.
+                              </span>
+                              <span
+                                dangerouslySetInnerHTML={{
+                                  __html: renderAllEquations(option),
+                                }}
+                              />
+                            </>
+                          )}
                         </div>
                       ))}
+                    </div>
+                  )}
+
+                  {/* Text answer for non-MCQ questions in quiz mode */}
+                  {quizMode && (question.type === "short" || question.type === "long") && (
+                    <div className="mt-4">
+                      <Label htmlFor="text-answer" className="mb-2 block">
+                        Your Answer:
+                      </Label>
+                      <Textarea
+                        id="text-answer"
+                        value={textAnswer}
+                        onChange={handleTextAnswerChange}
+                        placeholder="Type your answer here..."
+                        rows={3}
+                      />
                     </div>
                   )}
 

@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
-from database import Base, User, Grade, Subject, Chapter, Topic, Question, Worksheet
+from database import Base, User, Grade, Subject, Chapter, Topic, Question, Worksheet, QuizAnswer, QuizResult, QuizFeedback
 import schemas
+import uuid
 
 # User operations
 def get_user(db: Session, user_id: str):
@@ -190,3 +191,113 @@ def delete_worksheet(db: Session, worksheet_id: str, user_id: str):
         db.commit()
     
     return worksheet
+
+# Quiz Answer operations
+def get_quiz_answers(db: Session, user_id: str, worksheet_id: str = None):
+    query = db.query(QuizAnswer).filter(QuizAnswer.user_id == user_id)
+    if worksheet_id:
+        query = query.filter(QuizAnswer.worksheet_id == worksheet_id)
+    return query.all()
+
+def get_quiz_answer(db: Session, answer_id: str, user_id: str):
+    return db.query(QuizAnswer).filter(
+        QuizAnswer.id == answer_id,
+        QuizAnswer.user_id == user_id
+    ).first()
+
+def create_quiz_answer(db: Session, answer: schemas.QuizAnswerCreate, user_id: str):
+    # Get the question to check if the answer is correct
+    question = db.query(Question).filter(Question.id == answer.question_id).first()
+    if not question:
+        raise ValueError(f"Question with ID {answer.question_id} not found")
+    
+    # Determine if the answer is correct
+    is_correct = False
+    if question.type == "mcq":
+        if isinstance(answer.user_answer, int) and isinstance(question.correct_answer, int):
+            is_correct = answer.user_answer == question.correct_answer
+        elif isinstance(answer.user_answer, list) and isinstance(question.correct_answer, list):
+            is_correct = sorted(answer.user_answer) == sorted(question.correct_answer)
+    else:
+        # For short and long answer questions, simple string comparison
+        if isinstance(answer.user_answer, str) and isinstance(question.correct_answer, str):
+            is_correct = answer.user_answer.lower().strip() == question.correct_answer.lower().strip()
+    
+    db_answer = QuizAnswer(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        question_id=answer.question_id,
+        worksheet_id=answer.worksheet_id,
+        user_answer=answer.user_answer,
+        is_correct=is_correct
+    )
+    db.add(db_answer)
+    db.commit()
+    db.refresh(db_answer)
+    return db_answer
+
+def create_bulk_quiz_answers(db: Session, answers: list, user_id: str):
+    db_answers = []
+    for answer_data in answers:
+        try:
+            db_answer = create_quiz_answer(db, answer_data, user_id)
+            db_answers.append(db_answer)
+        except ValueError as e:
+            print(f"Error creating answer: {str(e)}")
+            continue
+    
+    return db_answers
+
+# Quiz Result operations
+def get_quiz_results(db: Session, user_id: str, worksheet_id: str = None):
+    query = db.query(QuizResult).filter(QuizResult.user_id == user_id)
+    if worksheet_id:
+        query = query.filter(QuizResult.worksheet_id == worksheet_id)
+    return query.all()
+
+def get_quiz_result(db: Session, result_id: str, user_id: str):
+    return db.query(QuizResult).filter(
+        QuizResult.id == result_id,
+        QuizResult.user_id == user_id
+    ).first()
+
+def create_quiz_result(db: Session, result: schemas.QuizResultCreate, user_id: str):
+    db_result = QuizResult(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        worksheet_id=result.worksheet_id,
+        total_questions=result.total_questions,
+        correct_answers=result.correct_answers,
+        score_percentage=result.score_percentage
+    )
+    db.add(db_result)
+    db.commit()
+    db.refresh(db_result)
+    return db_result
+
+# Quiz Feedback operations
+def get_quiz_feedback(db: Session, user_id: str, worksheet_id: str = None):
+    query = db.query(QuizFeedback).filter(QuizFeedback.user_id == user_id)
+    if worksheet_id:
+        query = query.filter(QuizFeedback.worksheet_id == worksheet_id)
+    return query.all()
+
+def get_quiz_feedback_by_type(db: Session, user_id: str, worksheet_id: str, feedback_type: str):
+    return db.query(QuizFeedback).filter(
+        QuizFeedback.user_id == user_id,
+        QuizFeedback.worksheet_id == worksheet_id,
+        QuizFeedback.feedback_type == feedback_type
+    ).all()
+
+def create_quiz_feedback(db: Session, feedback: schemas.QuizFeedbackCreate, user_id: str):
+    db_feedback = QuizFeedback(
+        id=str(uuid.uuid4()),
+        user_id=user_id,
+        worksheet_id=feedback.worksheet_id,
+        feedback_type=feedback.feedback_type,
+        comment=feedback.comment
+    )
+    db.add(db_feedback)
+    db.commit()
+    db.refresh(db_feedback)
+    return db_feedback

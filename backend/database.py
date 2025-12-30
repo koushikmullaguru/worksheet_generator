@@ -109,3 +109,49 @@ class Worksheet(Base):
     
     # Relationships
     user = relationship("User", back_populates="worksheets")
+
+class QuizAnswer(Base):
+    __tablename__ = "quiz_answers"
+    
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    question_id = Column(String, ForeignKey("questions.id"))
+    worksheet_id = Column(String, ForeignKey("worksheets.id"), nullable=True)
+    # Store user's answer as JSON to handle different question types
+    user_answer = Column(JSON, default=[])
+    is_correct = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User")
+    question = relationship("Question")
+    worksheet = relationship("Worksheet")
+
+class QuizResult(Base):
+    __tablename__ = "quiz_results"
+    
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    worksheet_id = Column(String, ForeignKey("worksheets.id"))
+    total_questions = Column(Integer, default=0)
+    correct_answers = Column(Integer, default=0)
+    score_percentage = Column(Integer, default=0)
+    completed_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User")
+    worksheet = relationship("Worksheet")
+
+class QuizFeedback(Base):
+    __tablename__ = "quiz_feedback"
+    
+    id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, ForeignKey("users.id"))
+    worksheet_id = Column(String, ForeignKey("worksheets.id"))
+    feedback_type = Column(String, index=True)  # "thumbs_up" or "thumbs_down"
+    comment = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    user = relationship("User")
+    worksheet = relationship("Worksheet")

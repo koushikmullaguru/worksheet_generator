@@ -144,7 +144,6 @@ class BaseGenerationRequest(BaseModel):
     include_images: bool = False
     generate_real_images: bool = False
     
-
 # 1. Worksheet Request (Standard practice tool, single topic)
 class WorksheetRequest(BaseGenerationRequest):
     topic_id: str
@@ -167,3 +166,62 @@ class ExamRequest(BaseGenerationRequest):
     long_answer_count: int = 3
     difficulty: str = "hard" # Higher default difficulty
     name: str = "Generated Exam"
+
+# Quiz Answer schemas
+class QuizAnswerBase(BaseModel):
+    user_answer: Union[List[int], int, str]
+    is_correct: bool = False
+
+class QuizAnswerCreate(QuizAnswerBase):
+    question_id: str
+    worksheet_id: Optional[str] = None
+
+class QuizAnswer(QuizAnswerBase):
+    id: str
+    user_id: str
+    question_id: str
+    worksheet_id: Optional[str]
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+# Quiz Result schemas
+class QuizResultBase(BaseModel):
+    total_questions: int
+    correct_answers: int
+    score_percentage: int
+
+class QuizResultCreate(QuizResultBase):
+    worksheet_id: str
+
+class QuizResult(QuizResultBase):
+    id: str
+    user_id: str
+    worksheet_id: str
+    completed_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+# Quiz Feedback schemas
+class QuizFeedbackBase(BaseModel):
+    feedback_type: str  # "thumbs_up" or "thumbs_down"
+    comment: Optional[str] = None
+
+class QuizFeedbackCreate(QuizFeedbackBase):
+    worksheet_id: str
+
+class QuizFeedback(QuizFeedbackBase):
+    id: str
+    user_id: str
+    worksheet_id: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+# Quiz Submission schema
+class QuizSubmission(BaseModel):
+    worksheet_id: Optional[str] = None
+    answers: List[QuizAnswerCreate]

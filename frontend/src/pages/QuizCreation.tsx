@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Header } from "../components/Header";
 import { QuizFilterPanel, QuizFilters } from "../components/QuizFilterPanel";
 import { ResultsPanel } from "../components/ResultsPanel";
+import { QuizResults } from "../components/QuizResultsFixed";
 import { useToast } from "../hooks/use-toast";
 import * as api from "../lib/api";
 
@@ -10,6 +11,8 @@ const QuizCreation = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [currentTopic, setCurrentTopic] = useState<string>('');
   const [currentTopicId, setCurrentTopicId] = useState<string>('');
+  const [showQuizResults, setShowQuizResults] = useState(false);
+  const [worksheetId, setWorksheetId] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -104,9 +107,44 @@ const QuizCreation = () => {
             onQuestionsChange={setQuestions}
             isLoading={isGenerating}
             contentType="quiz"
+            quizMode={true}
+            onSubmitQuiz={async (topicId, answers) => {
+              try {
+                // First, create a worksheet with the questions
+                const worksheetName = `${currentTopic} - Quiz`;
+                const questionIds = questions.map(q => q.id);
+                const worksheet = await api.saveWorksheet(worksheetName, topicId, questionIds, '');
+                
+                // Now submit the quiz answers with the worksheet ID
+                const submission: api.QuizSubmission = {
+                  worksheet_id: worksheet.id,
+                  answers: answers
+                };
+                await api.submitQuizAnswers(submission, '');
+                setWorksheetId(worksheet.id);
+                setShowQuizResults(true);
+                toast({
+                  title: "Quiz submitted",
+                  description: "Your answers have been recorded",
+                });
+              } catch (error) {
+                console.error('Error submitting quiz:', error);
+                toast({
+                  title: "Error",
+                  description: error instanceof Error ? error.message : 'Failed to submit quiz',
+                  variant: "destructive",
+                });
+              }
+            }}
           />
         </main>
       </div>
+      
+      <QuizResults
+        isOpen={showQuizResults}
+        onClose={() => setShowQuizResults(false)}
+        worksheetId={worksheetId}
+      />
     </div>
   );
 };

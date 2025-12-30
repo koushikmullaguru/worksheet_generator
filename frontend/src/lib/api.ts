@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 // Types
 export interface Grade {
@@ -10,338 +10,155 @@ export interface Grade {
 export interface Subject {
   id: string;
   name: string;
-  grade_id: string;
   description?: string;
+  grade_id: string;
 }
 
 export interface Chapter {
   id: string;
   name: string;
-  subject_id: string;
   description?: string;
+  subject_id: string;
 }
 
 export interface Topic {
   id: string;
   name: string;
+  description?: string;
   chapter_id: string;
   subtopics: string[];
-  description?: string;
 }
 
-// Question schemas
 export interface Question {
   id: string;
-  type: 'mcq' | 'short' | 'long' | 'image';
+  type: "mcq" | "short" | "long" | "image";
   text: string;
-  options?: string[];
-  correct_answer?: number | number[] | string;
+  options: string[];
+  correct_answer: number | string | number[];
   explanation: string;
-  // This array now contains Base64 Data URIs (e.g., "data:image/png;base64,...")
-  images?: string[]; 
-  difficulty: 'easy' | 'medium' | 'hard';
+  images: string[];
+  difficulty: "easy" | "medium" | "hard";
   marks: number;
   topic_id: string;
   user_id: string;
-  created_at?: string;
+  created_at: string;
 }
 
 export interface Worksheet {
   id: string;
   name: string;
   topic_id: string;
-  question_ids: string[];
   user_id: string;
-  created_at?: string;
-  updated_at?: string;
+  question_ids: string[];
+  created_at: string;
+  updated_at: string;
 }
 
-export interface User {
+export interface QuizAnswer {
   id: string;
-  username: string;
-  email: string;
-  created_at?: string;
+  user_id: string;
+  question_id: string;
+  worksheet_id: string;
+  user_answer: number | string | number[];
+  is_correct: boolean;
+  created_at: string;
 }
 
-export interface Token {
-  access_token: string;
-  token_type: string;
+export interface QuizAnswerCreate {
+  question_id: string;
+  worksheet_id?: string;
+  user_answer: number | string | number[];
 }
 
-// Auth APIs
-export async function register(username: string, email: string, password: string): Promise<Token> {
-  const response = await fetch(`${API_BASE_URL}/auth/register`, {
-    method: 'POST',
+export interface QuizResult {
+  id: string;
+  user_id: string;
+  worksheet_id: string;
+  total_questions: number;
+  correct_answers: number;
+  score_percentage: number;
+  completed_at: string;
+}
+
+export interface QuizResultCreate {
+  worksheet_id: string;
+  total_questions: number;
+  correct_answers: number;
+  score_percentage: number;
+}
+
+export interface QuizFeedback {
+  id: string;
+  user_id: string;
+  worksheet_id: string;
+  feedback_type: "thumbs_up" | "thumbs_down";
+  comment?: string;
+  created_at: string;
+}
+
+export interface QuizFeedbackCreate {
+  worksheet_id: string;
+  feedback_type: "thumbs_up" | "thumbs_down";
+  comment?: string;
+}
+
+export interface QuizSubmission {
+  worksheet_id?: string;
+  answers: QuizAnswerCreate[];
+}
+
+// Helper function for API requests
+async function apiRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const url = `${API_BASE_URL}${endpoint}`;
+  const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
+      ...options.headers,
     },
-    body: JSON.stringify({ username, email, password }),
+    ...options,
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Registration failed');
+    const error = await response.text();
+    throw new Error(`API Error: ${response.status} - ${error}`);
   }
 
   return response.json();
 }
 
-export async function login(username: string, password: string): Promise<Token> {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ username, password }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Login failed');
-  }
-
-  return response.json();
-}
-
-export async function getCurrentUser(token: string): Promise<User> {
-  const response = await fetch(`${API_BASE_URL}/auth/me`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to get current user');
-  }
-
-  return response.json();
-}
-
-// Grade APIs
+// API Functions
 export async function getGrades(): Promise<Grade[]> {
-  const response = await fetch(`${API_BASE_URL}/grades`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch grades');
-  }
-
-  return response.json();
-}
-
-// Subject APIs
-export async function getSubjects(): Promise<Subject[]> {
-  const response = await fetch(`${API_BASE_URL}/subjects`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch subjects');
-  }
-
-  return response.json();
+  return apiRequest<Grade[]>("/api/grades");
 }
 
 export async function getSubjectsByGrade(gradeId: string): Promise<Subject[]> {
-  const response = await fetch(`${API_BASE_URL}/grades/${gradeId}/subjects`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch subjects for grade');
-  }
-
-  return response.json();
+  return apiRequest<Subject[]>(`/api/grades/${gradeId}/subjects`);
 }
 
-// Chapter APIs
+export async function getSubjects(): Promise<Subject[]> {
+  return apiRequest<Subject[]>("/api/subjects");
+}
+
 export async function getChapters(subjectId: string): Promise<Chapter[]> {
-  const response = await fetch(`${API_BASE_URL}/subjects/${subjectId}/chapters`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch chapters');
-  }
-
-  return response.json();
+  return apiRequest<Chapter[]>(`/api/subjects/${subjectId}/chapters`);
 }
 
-// Topic APIs
 export async function getTopics(chapterId: string): Promise<Topic[]> {
-  const response = await fetch(`${API_BASE_URL}/chapters/${chapterId}/topics`);
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch topics');
-  }
-
-  return response.json();
+  return apiRequest<Topic[]>(`/api/chapters/${chapterId}/topics`);
 }
 
-// Question APIs
 export async function generateWorksheet(
   topicId: string,
   mcqCount: number,
   shortAnswerCount: number,
   longAnswerCount: number,
-  difficulty: 'easy' | 'medium' | 'hard' = 'medium',
-  includeImages: boolean = false,
-  subjectName: string = '', // Added subjectName parameter
-  token: string = ''
+  difficulty: "easy" | "medium" | "hard",
+  includeImages: boolean,
+  subjectName: string,
+  token: string
 ): Promise<Question[]> {
-  const response = await fetch(`${API_BASE_URL}/generate-worksheet`, {
+  return apiRequest<Question[]>("/api/generate-worksheet", {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-    body: JSON.stringify({
-      topic_id: topicId,
-      mcq_count: mcqCount,
-      short_answer_count: shortAnswerCount,
-      long_answer_count: longAnswerCount,
-      difficulty,
-      include_images: includeImages,
-      subject_name: subjectName, // CRITICAL FIX: Pass subject name to the backend
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to generate worksheet');
-  }
-
-  return response.json();
-}
-
-export async function getQuestions(
-  topicId?: string,
-  token: string = ''
-): Promise<Question[]> {
-  let url = `${API_BASE_URL}/questions`;
-  if (topicId) {
-    url += `?topic_id=${topicId}`;
-  }
-
-  const response = await fetch(url, {
-    headers: {
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch questions');
-  }
-
-  return response.json();
-}
-
-export async function getQuestion(
-  questionId: string,
-  token: string = ''
-): Promise<Question> {
-  const response = await fetch(`${API_BASE_URL}/questions/${questionId}`, {
-    headers: {
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch question');
-  }
-
-  return response.json();
-}
-
-// Worksheet APIs
-export async function saveWorksheet(
-  name: string,
-  topicId: string,
-  questionIds: string[],
-  token: string = ''
-): Promise<Worksheet> {
-  const response = await fetch(`${API_BASE_URL}/worksheets`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-    body: JSON.stringify({
-      id: `ws-${Date.now()}`,
-      name,
-      topic_id: topicId,
-      question_ids: questionIds,
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to save worksheet');
-  }
-
-  return response.json();
-}
-
-export async function getWorksheets(token: string = ''): Promise<Worksheet[]> {
-  const response = await fetch(`${API_BASE_URL}/worksheets`, {
-    headers: {
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch worksheets');
-  }
-
-  return response.json();
-}
-
-export async function getWorksheet(
-  worksheetId: string,
-  token: string = ''
-): Promise<Worksheet> {
-  const response = await fetch(`${API_BASE_URL}/worksheets/${worksheetId}`, {
-    headers: {
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to fetch worksheet');
-  }
-
-  return response.json();
-}
-
-export async function deleteWorksheet(
-  worksheetId: string,
-  token: string = ''
-): Promise<{ message: string }> {
-  const response = await fetch(`${API_BASE_URL}/worksheets/${worksheetId}`, {
-    method: 'DELETE',
-    headers: {
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Failed to delete worksheet');
-  }
-
-  return response.json();
-}
-
-// Quiz APIs
-export async function generateQuiz(
-  topicId: string,
-  mcqCount: number = 5,
-  shortAnswerCount: number = 1,
-  longAnswerCount: number = 0,
-  difficulty: 'easy' | 'medium' | 'hard' = 'easy',
-  includeImages: boolean = false,
-  subjectName: string = '',
-  token: string = ''
-): Promise<Question[]> {
-  const response = await fetch(`${API_BASE_URL}/generate-quiz`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
     body: JSON.stringify({
       topic_id: topicId,
       mcq_count: mcqCount,
@@ -352,32 +169,44 @@ export async function generateQuiz(
       subject_name: subjectName,
     }),
   });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to generate quiz');
-  }
-
-  return response.json();
 }
 
-// Exam APIs
+export async function generateQuiz(
+  topicId: string,
+  mcqCount: number,
+  shortAnswerCount: number,
+  longAnswerCount: number,
+  difficulty: "easy" | "medium" | "hard",
+  includeImages: boolean,
+  subjectName: string,
+  token: string
+): Promise<Question[]> {
+  return apiRequest<Question[]>("/api/generate-quiz", {
+    method: 'POST',
+    body: JSON.stringify({
+      topic_id: topicId,
+      mcq_count: mcqCount,
+      short_answer_count: shortAnswerCount,
+      long_answer_count: longAnswerCount,
+      difficulty,
+      include_images: includeImages,
+      subject_name: subjectName,
+    }),
+  });
+}
+
 export async function generateExam(
   topicIds: string[],
-  mcqCount: number = 10,
-  shortAnswerCount: number = 5,
-  longAnswerCount: number = 3,
-  difficulty: 'easy' | 'medium' | 'hard' = 'hard',
-  includeImages: boolean = false,
-  subjectName: string = '',
-  token: string = ''
+  mcqCount: number,
+  shortAnswerCount: number,
+  longAnswerCount: number,
+  difficulty: "easy" | "medium" | "hard",
+  includeImages: boolean,
+  subjectName: string,
+  token: string
 ): Promise<Question[]> {
-  const response = await fetch(`${API_BASE_URL}/generate-exam`, {
+  return apiRequest<Question[]>("/api/generate-exam", {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` }),
-    },
     body: JSON.stringify({
       topic_ids: topicIds,
       mcq_count: mcqCount,
@@ -388,11 +217,73 @@ export async function generateExam(
       subject_name: subjectName,
     }),
   });
+}
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.detail || 'Failed to generate exam');
-  }
+export async function saveWorksheet(
+  name: string,
+  topicId: string,
+  questionIds: string[],
+  token: string
+): Promise<Worksheet> {
+  return apiRequest<Worksheet>("/api/worksheets", {
+    method: 'POST',
+    body: JSON.stringify({
+      id: `ws-${Date.now()}`,
+      name,
+      topic_id: topicId,
+      question_ids: questionIds,
+    }),
+  });
+}
 
-  return response.json();
+export async function getWorksheet(worksheetId: string, token: string): Promise<Worksheet> {
+  return apiRequest<Worksheet>(`/api/worksheets/${worksheetId}`);
+}
+
+export async function submitQuizAnswers(
+  submission: QuizSubmission,
+  token: string
+): Promise<QuizAnswer[]> {
+  return apiRequest<QuizAnswer[]>("/api/quiz-answers", {
+    method: 'POST',
+    body: JSON.stringify(submission),
+  });
+}
+
+export async function getQuizAnswers(
+  worksheetId: string,
+  token: string
+): Promise<QuizAnswer[]> {
+  return apiRequest<QuizAnswer[]>(`/api/quiz-answers?worksheet_id=${worksheetId}`);
+}
+
+export async function getQuizResults(
+  worksheetId: string,
+  token: string
+): Promise<QuizResult[]> {
+  return apiRequest<QuizResult[]>(`/api/quiz-results?worksheet_id=${worksheetId}`);
+}
+
+export async function getQuizResult(
+  resultId: string,
+  token: string
+): Promise<QuizResult> {
+  return apiRequest<QuizResult>(`/api/quiz-results/${resultId}`);
+}
+
+export async function submitQuizFeedback(
+  feedback: QuizFeedbackCreate,
+  token: string
+): Promise<QuizFeedback> {
+  return apiRequest<QuizFeedback>("/api/quiz-feedback", {
+    method: 'POST',
+    body: JSON.stringify(feedback),
+  });
+}
+
+export async function getQuizFeedback(
+  worksheetId: string,
+  token: string
+): Promise<QuizFeedback[]> {
+  return apiRequest<QuizFeedback[]>(`/api/quiz-feedback?worksheet_id=${worksheetId}`);
 }
