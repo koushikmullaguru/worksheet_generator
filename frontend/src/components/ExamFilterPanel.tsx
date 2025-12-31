@@ -257,17 +257,22 @@ export function ExamFilterPanel({ onGenerate }: ExamFilterPanelProps) {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="difficulty">Difficulty Level</Label>
+          <Label htmlFor="difficulty">Difficulty Level (NCERT Class 10 Mathematics)</Label>
           <Select value={difficulty} onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}>
             <SelectTrigger id="difficulty">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="easy">Easy</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="hard">Hard</SelectItem>
+              <SelectItem value="easy">Easy (1-2 marks)</SelectItem>
+              <SelectItem value="medium">Medium (3-5 marks)</SelectItem>
+              <SelectItem value="hard">Hard (5 marks)</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            {difficulty === 'easy' && 'Basic understanding and direct application of formulas'}
+            {difficulty === 'medium' && 'Multi-step problems requiring application of multiple concepts'}
+            {difficulty === 'hard' && 'Complex problems requiring analytical thinking and deeper understanding'}
+          </p>
         </div>
 
         <div className="space-y-2">

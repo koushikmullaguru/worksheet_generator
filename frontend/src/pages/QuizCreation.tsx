@@ -35,8 +35,8 @@ const QuizCreation = () => {
 
       // Generate quiz from backend API
       const mcqCount = filters.mcqCount || 5; // Default to 5 MCQs for quizzes
-      const shortAnswerCount = 0; // No short answers for quizzes
-      const longAnswerCount = 0; // No long answers for quizzes
+      const shortAnswerCount = filters.shortAnswerCount || 0; // Use short answer count from filters
+      const longAnswerCount = filters.longAnswerCount || 0; // Use long answer count from filters
       const difficulty = filters.difficulty || 'easy'; // Default to easy difficulty for quizzes
       
       // Determine if we should include images based on the question type and user preferences

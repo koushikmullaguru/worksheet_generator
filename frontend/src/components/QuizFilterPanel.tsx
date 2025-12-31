@@ -21,6 +21,8 @@ export interface QuizFilters {
   chapter: string;
   topic: string;
   mcqCount: number;
+  shortAnswerCount: number;
+  longAnswerCount: number;
   difficulty?: 'easy' | 'medium' | 'hard';
   includeImagesForMCQ?: boolean;
   generateRealImages?: boolean;
@@ -33,6 +35,8 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
   const [chapter, setChapter] = useState('');
   const [topic, setTopic] = useState('');
   const [mcqCount, setMcqCount] = useState(5);
+  const [shortAnswerCount, setShortAnswerCount] = useState(2);
+  const [longAnswerCount, setLongAnswerCount] = useState(1);
 
   // API data state
   const [grades, setGrades] = useState<api.Grade[]>([]);
@@ -141,6 +145,8 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
       chapter,
       topic,
       mcqCount,
+      shortAnswerCount,
+      longAnswerCount,
       difficulty,
       includeImagesForMCQ,
       generateRealImages,
@@ -151,6 +157,8 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
     setChapter('');
     setTopic('');
     setMcqCount(5);
+    setShortAnswerCount(2);
+    setLongAnswerCount(1);
     setIncludeImagesForMCQ(false);
     setGenerateRealImages(false);
     setDifficulty('easy');
@@ -241,17 +249,22 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="difficulty">Difficulty Level</Label>
+          <Label htmlFor="difficulty">Difficulty Level (NCERT Class 10 Mathematics)</Label>
           <Select value={difficulty} onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}>
             <SelectTrigger id="difficulty">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="easy">Easy</SelectItem>
-              <SelectItem value="medium">Medium</SelectItem>
-              <SelectItem value="hard">Hard</SelectItem>
+              <SelectItem value="easy">Easy (1-2 marks)</SelectItem>
+              <SelectItem value="medium">Medium (3-5 marks)</SelectItem>
+              <SelectItem value="hard">Hard (5 marks)</SelectItem>
             </SelectContent>
           </Select>
+          <p className="text-xs text-muted-foreground">
+            {difficulty === 'easy' && 'Basic understanding and direct application of formulas'}
+            {difficulty === 'medium' && 'Multi-step problems requiring application of multiple concepts'}
+            {difficulty === 'hard' && 'Complex problems requiring analytical thinking and deeper understanding'}
+          </p>
         </div>
 
         <div className="space-y-2">
@@ -263,6 +276,30 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
             max={50}
             value={mcqCount}
             onChange={(e) => setMcqCount(parseInt(e.target.value) || 1)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="short-count">Number of Short Answer Questions</Label>
+          <Input
+            id="short-count"
+            type="number"
+            min={0}
+            max={20}
+            value={shortAnswerCount}
+            onChange={(e) => setShortAnswerCount(parseInt(e.target.value) || 0)}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="long-count">Number of Long Answer Questions</Label>
+          <Input
+            id="long-count"
+            type="number"
+            min={0}
+            max={10}
+            value={longAnswerCount}
+            onChange={(e) => setLongAnswerCount(parseInt(e.target.value) || 0)}
           />
         </div>
 

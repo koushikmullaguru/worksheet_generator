@@ -48,50 +48,160 @@ export const grades = ['7', '8', '9', '10', '11', '12'];
 
 export const subjects: Subject[] = [
   {
-    id: 'biology',
-    name: 'Biology',
+    id: 'math-grade-10',
+    name: 'Mathematics',
     chapters: [
       {
-        id: 'control-coordination',
-        name: 'Control and Coordination',
+        id: 'math-grade-10-chapter-real-numbers',
+        name: 'Real Numbers',
         topics: [
           {
-            id: 'nervous-system',
-            name: 'Animals - Nervous System',
-            subtopics: ['Neurons', 'Reflex Actions', 'Brain Structure']
-          },
-          {
-            id: 'hormones',
-            name: 'Chemical Coordination',
-            subtopics: ['Endocrine Glands', 'Hormones', 'Feedback Mechanism']
+            id: 'math-grade-10-chapter-real-numbers-topic-real-numbers',
+            name: 'Real Numbers',
+            subtopics: ['Fundamental Theorem of Arithmetic', 'Irrational Numbers', 'Decimal Expansion']
           }
         ]
       },
       {
-        id: 'reproduction',
-        name: 'How Do Organisms Reproduce',
+        id: 'math-grade-10-chapter-polynomials',
+        name: 'Polynomials',
         topics: [
           {
-            id: 'asexual',
-            name: 'Asexual Reproduction',
-            subtopics: ['Binary Fission', 'Budding', 'Fragmentation']
+            id: 'math-grade-10-chapter-polynomials-topic-polynomials',
+            name: 'Polynomials',
+            subtopics: ['Geometrical Meaning of Zeroes', 'Relationship between Zeroes and Coefficients', 'Division Algorithm for Polynomials']
           }
         ]
-      }
-    ]
-  },
-  {
-    id: 'physics',
-    name: 'Physics',
-    chapters: [
+      },
       {
-        id: 'electricity',
-        name: 'Electricity',
+        id: 'math-grade-10-chapter-pair-of-linear-equations',
+        name: 'Pair of Linear Equations in Two Variables',
         topics: [
           {
-            id: 'circuits',
-            name: 'Electric Circuits',
-            subtopics: ['Series', 'Parallel', 'Ohms Law']
+            id: 'math-grade-10-chapter-pair-of-linear-equations-topic-pair-of-linear-equations',
+            name: 'Pair of Linear Equations in Two Variables',
+            subtopics: ['Graphical Method', 'Algebraic Methods', 'Consistency of Linear Equations']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-quadratic-equations',
+        name: 'Quadratic Equations',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-quadratic-equations-topic-quadratic-equations',
+            name: 'Quadratic Equations',
+            subtopics: ['Standard Form', 'Solution by Factorization', 'Nature of Roots']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-arithmetic-progressions',
+        name: 'Arithmetic Progressions',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-arithmetic-progressions-topic-arithmetic-progressions',
+            name: 'Arithmetic Progressions',
+            subtopics: ['nth Term of an AP', 'Sum of First n Terms of an AP']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-triangles',
+        name: 'Triangles',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-triangles-topic-triangles',
+            name: 'Triangles',
+            subtopics: ['Similarity of Triangles', 'Basic Proportionality Theorem', 'Criteria for Similarity of Triangles']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-coordinate-geometry',
+        name: 'Coordinate Geometry',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-coordinate-geometry-topic-coordinate-geometry',
+            name: 'Coordinate Geometry',
+            subtopics: ['Distance Formula', 'Section Formula']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-introduction-to-trigonometry',
+        name: 'Introduction to Trigonometry',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-introduction-to-trigonometry-topic-introduction-to-trigonometry',
+            name: 'Introduction to Trigonometry',
+            subtopics: ['Trigonometric Ratios', 'Trigonometric Identities']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-applications-of-trigonometry',
+        name: 'Some Applications of Trigonometry',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-applications-of-trigonometry-topic-applications-of-trigonometry',
+            name: 'Some Applications of Trigonometry',
+            subtopics: ['Heights and Distances', 'Angle of Elevation and Depression']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-circles',
+        name: 'Circles',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-circles-topic-circles',
+            name: 'Circles',
+            subtopics: ['Tangent to a Circle', 'Number of Tangents from a Point to a Circle']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-areas-related-to-circles',
+        name: 'Areas Related to Circles',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-areas-related-to-circles-topic-areas-related-to-circles',
+            name: 'Areas Related to Circles',
+            subtopics: ['Perimeter and Area of a Circle', 'Areas of Sector and Segment of a Circle']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-surface-areas-and-volumes',
+        name: 'Surface Areas and Volumes',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-surface-areas-and-volumes-topic-surface-areas-and-volumes',
+            name: 'Surface Areas and Volumes',
+            subtopics: ['Surface Area of Combined Solids', 'Volume of Combined Solids']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-statistics',
+        name: 'Statistics',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-statistics-topic-statistics',
+            name: 'Statistics',
+            subtopics: ['Mean of Grouped Data', 'Mode of Grouped Data', 'Median of Grouped Data']
+          }
+        ]
+      },
+      {
+        id: 'math-grade-10-chapter-probability',
+        name: 'Probability',
+        topics: [
+          {
+            id: 'math-grade-10-chapter-probability-topic-probability',
+            name: 'Probability',
+            subtopics: ['Theoretical Probability', 'Simple Events']
           }
         ]
       }
