@@ -117,7 +117,7 @@ class LLMService:
 
     SUBJECT_LLM_MODELS = {
         "Biology": "mistralai/mistral-7b-instruct:free",
-        "Mathematics": "qwen/qwen-2.5-vl-7b-instruct:free",
+        "Mathematics": "tngtech/deepseek-r1t2-chimera:free",
         "Chemistry": "openai/gpt-oss-20b:free",
         "Physics": "openai/gpt-oss-20b:free",
     }
@@ -887,9 +887,17 @@ async def _generate_questions_from_topics(
             # Convert a short question to MCQ
             question_to_convert = short_questions.pop()
             question_to_convert["type"] = "mcq"
-            # Add options if not present
+            # Add options if not present, but don't overwrite existing options
             if not question_to_convert.get("options") or len(question_to_convert.get("options", [])) < 4:
-                question_to_convert["options"] = ["Option A", "Option B", "Option C", "Option D"]
+                # Only add placeholder options if none exist
+                if not question_to_convert.get("options"):
+                    question_to_convert["options"] = ["Option A", "Option B", "Option C", "Option D"]
+                else:
+                    # If some options exist, pad with placeholders to reach 4
+                    existing_options = question_to_convert.get("options", [])
+                    while len(existing_options) < 4:
+                        existing_options.append(f"Option {chr(65 + len(existing_options))}")
+                    question_to_convert["options"] = existing_options
             mcq_questions.append(question_to_convert)
         elif len(long_questions) > 0:
             # Convert a long question to MCQ

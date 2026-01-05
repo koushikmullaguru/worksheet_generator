@@ -21,6 +21,39 @@ NCERT_CLASS_10_MATH_TOPICS = {
     "Probability": "Theoretical probability, Simple events"
 }
 
+TOPIC_SUMMARIES = {
+    "Quadratic Equations": """
+1. A quadratic equation in the variable x is of the form ax2 + bx + c = 0, where a, b, c are real numbers and a ≠ 0.
+2. A real number α is said to be a root of the quadratic equation ax2 + bx + c = 0, if aα2 + bα + c = 0. The zeroes of the quadratic polynomial ax2 + bx + c and the roots of the quadratic equation ax2 + bx + c = 0 are the same.
+3. If we can factorise ax2 + bx + c, a ≠ 0, into a product of two linear factors, then the roots of the quadratic equation ax2 + bx + c = 0 can be found by equating each factor to zero.
+4. Quadratic formula: The roots of a quadratic equation ax2 + bx + c = 0 are given by [-b ± √(b2 – 4ac)] / 2a, provided b2 – 4ac ≥ 0.
+5. A quadratic equation ax2 + bx + c = 0 has:
+(i) two distinct real roots, if b2 – 4ac > 0,
+(ii) two equal roots (i.e., coincident roots), if b2 – 4ac = 0, and
+(iii) no real roots, if b2 – 4ac < 0.
+    """,
+    
+    "Arithmetic Progressions": """
+1. An arithmetic progression (AP) is a list of numbers in which each term is obtained by adding a fixed number d to the preceding term, except the first term. The fixed number d is called the common difference. The general form of an AP is a, a + d, a + 2d, a + 3d, . . .
+2. A given list of numbers a1, a2, a3, . . . is an AP, if the differences a2 – a1, a3 – a2, a4 – a3, . . ., give the same value, i.e., if ak + 1 – ak is the same for different values of k.
+3. In an AP with first term a and common difference d, the nth term (or the general term) is given by an = a + (n – 1) d.
+4. The sum of the first n terms of an AP is given by : S = n/2 [2a + (n-1) d]
+5. If l is the last term of the finite AP, say the nth term, then the sum of all terms of the AP is given by : S = n/2 (a + l)
+    """,
+
+    "Introduction to Trigonometry": """
+1. In a right triangle ABC, right-angled at B, sin A = (side opposite to angle A)/hypotenuse, cos A = (side adjacent to angle A)/hypotenuse, tan A = (side opposite to angle A)/(side adjacent to angle A).
+2. cosec A = 1/sin A; sec A = 1/cos A; cot A = 1/tan A; tan A = sin A / cos A.
+3. If one of the trigonometric ratios of an acute angle is known, the remaining trigonometric ratios of the angle can be easily determined.
+4. The values of trigonometric ratios for angles 0°, 30°, 45°, 60° and 90°.
+5. The value of sin A or cos A never exceeds 1, whereas the value of sec A (0° ≤ A < 90°) or cosec A (0° < A ≤ 90°) is always greater than or equal to 1.
+6. sin^2 A + cos^2 A = 1, sec^2 A – tan^2 A = 1 for 0° ≤ A < 90°, cosec^2 A = 1 + cot^2 A for 0° < A ≤ 90°.
+    """
+}
+
+
+
+
 # Difficulty levels and their corresponding question types and marks
 DIFFICULTY_LEVELS = {
     "easy": {
