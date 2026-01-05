@@ -1,6 +1,21 @@
 import * as api from './api';
 import { renderAllEquations } from './equationUtils';
 
+// Declare html2pdf on the window object
+declare global {
+    interface Window {
+        html2pdf: {
+            (): {
+                set: (options: object) => {
+                    from: (element: HTMLElement) => {
+                        save: () => Promise<void>;
+                    };
+                };
+            };
+        };
+    }
+}
+
 export interface ExportOptions {
     includeAnswers: boolean;
     format: 'pdf' | 'txt';
@@ -97,6 +112,7 @@ export function generateWorksheetHTML(
         <head>
             <meta charset="UTF-8">
             <title>${topic || 'Worksheet'}</title>
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
             <style>
                 /* Base Styles */
                 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -132,14 +148,14 @@ export function generateWorksheetHTML(
                 .question-item {
                     margin-bottom: 25px;
                     padding-bottom: 5px;
-                    page-break-inside: avoid; 
-                    break-inside: avoid; 
+                    page-break-inside: avoid;
+                    break-inside: avoid;
                 }
                 .question-text {
                     margin: 0 0 10px 0;
                     font-weight: bold;
                     font-size: 15px;
-                    display: block; 
+                    display: block;
                     width: 100%;
                 }
                 .marks-float {
@@ -176,6 +192,20 @@ export function generateWorksheetHTML(
                     size: A4;
                     margin: 10mm;
                 }
+                
+                /* KaTeX specific styles for PDF export */
+                .katex {
+                    font-family: KaTeX_Main, Times New Roman, serif;
+                    font-size: 1.1em;
+                }
+                .katex-display {
+                    display: block;
+                    margin: 0.5em 0;
+                    text-align: center;
+                }
+                .katex-inline {
+                    display: inline;
+                }
             </style>
         </head>
         <body>
@@ -207,7 +237,7 @@ export async function exportToPDF(
     includeAnswers: boolean = false,
     filename: string = 'worksheet.pdf'
 ) {
-    const html2pdf = (window as any).html2pdf;
+    const html2pdf = window.html2pdf;
     
     if (!html2pdf) {
         alert("PDF library not loaded. Please refresh the page and try again.");

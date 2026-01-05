@@ -93,10 +93,45 @@ export function renderInlineEquations(text: string): string {
 export function renderAllEquations(text: string): string {
   if (!text) return '';
   
-  // First render display equations
-  let processedText = renderEquations(text);
+  // First convert escaped \n to actual newlines
+  let processedText = text.replace(/\\n/g, '\n');
   
-  // Then render inline equations
+  // Then convert actual newlines to HTML <br> tags
+  processedText = processedText.replace(/\n/g, '<br>');
+  
+  // Process common LaTeX symbols that might appear outside of equation delimiters
+  const latexSymbols = [
+    { regex: /\\Rightarrow/g, replacement: '⇒' },
+    { regex: /\\Leftarrow/g, replacement: '⇐' },
+    { regex: /\\Leftrightarrow/g, replacement: '⇔' },
+    { regex: /\\rightarrow/g, replacement: '→' },
+    { regex: /\\leftarrow/g, replacement: '←' },
+    { regex: /\\leftrightarrow/g, replacement: '↔' },
+    { regex: /\\times/g, replacement: '×' },
+    { regex: /\\div/g, replacement: '÷' },
+    { regex: /\\pm/g, replacement: '±' },
+    { regex: /\\neq/g, replacement: '≠' },
+    { regex: /\\leq/g, replacement: '≤' },
+    { regex: /\\geq/g, replacement: '≥' },
+    { regex: /\\infty/g, replacement: '∞' },
+    { regex: /\\alpha/g, replacement: 'α' },
+    { regex: /\\beta/g, replacement: 'β' },
+    { regex: /\\gamma/g, replacement: 'γ' },
+    { regex: /\\delta/g, replacement: 'δ' },
+    { regex: /\\theta/g, replacement: 'θ' },
+    { regex: /\\pi/g, replacement: 'π' },
+    { regex: /\\sigma/g, replacement: 'σ' },
+  ];
+  
+  // Apply all the symbol replacements
+  latexSymbols.forEach(symbol => {
+    processedText = processedText.replace(symbol.regex, symbol.replacement);
+  });
+  
+  // Then render display equations
+  processedText = renderEquations(processedText);
+  
+  // Finally render inline equations
   processedText = renderInlineEquations(processedText);
   
   return processedText;
