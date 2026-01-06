@@ -4,6 +4,7 @@ import { FilterPanel, WorksheetFilters } from "../components/FilterPanel";
 import { ResultsPanel } from "../components/ResultsPanel";
 import { useToast } from "../hooks/use-toast";
 import * as api from "../lib/api";
+import type { QuizGenerationRequest } from "../lib/api";
 
 const Index = () => {
   const [questions, setQuestions] = useState<api.Question[]>([]);
@@ -57,15 +58,28 @@ const Index = () => {
         }
       }
       
+      // Prepare the request parameters based on which option is selected
+      const worksheetRequest: QuizGenerationRequest = {
+        topic_id: filters.topic,
+        mcq_count: mcqCount,
+        short_answer_count: shortAnswerCount,
+        long_answer_count: longAnswerCount,
+        subject_name: subjectName,
+        include_images: includeImages,
+        generate_real_images: filters.generateRealImages || false,
+      };
+
+      // Add either difficulty OR Bloom's taxonomy, but not both
+      if (filters.difficulty) {
+        worksheetRequest.difficulty = filters.difficulty;
+      } else if (filters.useBloomsTaxonomy && filters.bloomsTaxonomyLevel) {
+        worksheetRequest.use_blooms_taxonomy = true;
+        worksheetRequest.blooms_taxonomy_level = filters.bloomsTaxonomyLevel;
+      }
+
       const generatedQuestions = await api.generateWorksheet(
-        filters.topic,
-        mcqCount,
-        shortAnswerCount,
-        longAnswerCount,
-        difficulty as 'easy' | 'medium' | 'hard',
-        includeImages,
-        subjectName,
-        '' // This is the 8th and final argument (the optional 'token' string).
+        worksheetRequest,
+        '' // This is the token argument
       );
 
       setQuestions(generatedQuestions);

@@ -3,6 +3,7 @@ import { Header } from "../components/Header";
 import { ResultsPanel } from "../components/ResultsPanel";
 import { useToast } from "../hooks/use-toast";
 import * as api from "../lib/api";
+import type { ExamGenerationRequest } from "../lib/api";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -30,6 +31,8 @@ const ExamCreation = () => {
   const [mcqCount, setMcqCount] = useState<number>(10);
   const [shortAnswerCount, setShortAnswerCount] = useState<number>(5);
   const [longAnswerCount, setLongAnswerCount] = useState<number>(3);
+  const [useBloomsTaxonomy, setUseBloomsTaxonomy] = useState<boolean>(false);
+  const [bloomsTaxonomyLevel, setBloomsTaxonomyLevel] = useState<'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'>('apply');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -112,15 +115,27 @@ const ExamCreation = () => {
       // Generate exam from backend API
       const includeImages = false; // We're not including images for now
       
+      // Prepare the request parameters based on which option is selected
+      const examRequest: ExamGenerationRequest = {
+        topic_ids: currentTopicIds,
+        mcq_count: mcqCount,
+        short_answer_count: shortAnswerCount,
+        long_answer_count: longAnswerCount,
+        subject_name: subjectName,
+        include_images: includeImages,
+      };
+
+      // Add either difficulty OR Bloom's taxonomy, but not both
+      if (difficulty) {
+        examRequest.difficulty = difficulty;
+      } else if (useBloomsTaxonomy && bloomsTaxonomyLevel) {
+        examRequest.use_blooms_taxonomy = true;
+        examRequest.blooms_taxonomy_level = bloomsTaxonomyLevel;
+      }
+
       const generatedQuestions = await api.generateExam(
-        currentTopicIds,
-        mcqCount,
-        shortAnswerCount,
-        longAnswerCount,
-        difficulty,
-        includeImages,
-        subjectName,
-        '' // This is the 8th and final argument (the optional 'token' string).
+        examRequest,
+        '' // This is the token argument
       );
 
       setQuestions(generatedQuestions);

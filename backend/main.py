@@ -12,7 +12,7 @@ from pydantic import BaseModel  # noqa: F401  (kept in case schemas use it)
 import jwt
 from dotenv import load_dotenv
 import re  # For robust parsing logic
-from ncert_math_topics import NCERT_CLASS_10_MATH_TOPICS, DIFFICULTY_LEVELS, QUESTION_DISTRIBUTION, TOPIC_WISE_WEIGHTAGE
+from ncert_math_topics import NCERT_CLASS_10_MATH_TOPICS, DIFFICULTY_LEVELS, QUESTION_DISTRIBUTION, TOPIC_WISE_WEIGHTAGE, BLOOMS_TAXONOMY_LEVELS
 
 # ---------------------------------------------------------------------------
 # Environment & DB setup
@@ -594,8 +594,44 @@ async def _generate_questions_from_topics(
     if subject_name == "Mathematics" and topic_names in NCERT_CLASS_10_MATH_TOPICS:
         ncert_topic_details = NCERT_CLASS_10_MATH_TOPICS[topic_names]
     
-    # Get difficulty level details
-    difficulty_details = DIFFICULTY_LEVELS.get(request.difficulty, DIFFICULTY_LEVELS["medium"])
+    # Validate that difficulty and Bloom's taxonomy are mutually exclusive
+    try:
+        request.validate()
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    
+    # Check if both Bloom's taxonomy and difficulty are selected (mutually exclusive)
+    use_blooms = request.use_blooms_taxonomy and request.blooms_taxonomy_level
+    use_difficulty = request.difficulty is not None
+    
+    # Add Bloom's taxonomy information if enabled (and difficulty is not)
+    blooms_taxonomy_info = ""
+    if use_blooms:
+        blooms_level = request.blooms_taxonomy_level
+        if blooms_level in BLOOMS_TAXONOMY_LEVELS:
+            blooms_info = BLOOMS_TAXONOMY_LEVELS[blooms_level]
+            blooms_taxonomy_info = f"""
+    ### BLOOM'S TAXONOMY REQUIREMENT ###
+    YOU MUST GENERATE QUESTIONS THAT STRICTLY ADHERE TO THE BLOOM'S TAXONOMY LEVEL: {blooms_level.upper()}
+    
+    BLOOM'S TAXONOMY LEVEL DESCRIPTION: {blooms_info['description']}
+    
+    KEYWORDS TO INCORPORATE: {', '.join(blooms_info['keywords'])}
+    
+    EXAMPLE QUESTIONS FOR THIS LEVEL:
+    {'; '.join(blooms_info['question_examples'][:3])}
+    
+    CRITICAL: ALL QUESTIONS MUST BE DESIGNED TO ASSESS {blooms_level.upper()} LEVEL COGNITIVE SKILLS.
+    EACH QUESTION MUST REQUIRE STUDENTS TO {blooms_info['description'].upper()}.
+    """
+    
+    # Get difficulty level details if enabled (and Bloom's taxonomy is not)
+    difficulty_details = None
+    if use_difficulty:
+        difficulty_details = DIFFICULTY_LEVELS.get(request.difficulty, DIFFICULTY_LEVELS["medium"])
     
     prompt_base = f"""
     INSTRUCTION: USE LATEX FOR ALL MATHEMATICAL NOTATION.
@@ -642,19 +678,25 @@ async def _generate_questions_from_topics(
     
     ABSOLUTELY DO NOT GENERATE QUESTIONS ABOUT TOPICS OUTSIDE OF "{topic_names}".
     STRICTLY STAY WITHIN THE BOUNDARIES OF THE SPECIFIED TOPIC AND ITS SUBTOPICS: {subtopics}.
+    {blooms_taxonomy_info}
 
     Generate educational questions for an assessment with the following details:
 
     Subject: {subject_name}
     Topics Covered: {topic_names}
     Detailed Concepts: {subtopics}
-    Difficulty Level: {request.difficulty} ({difficulty_details['description']})
-    Focus: {difficulty_details['focus']}
+    
+    {difficulty_details if difficulty_details else ""}
+    
+    {"""
+    Difficulty Level: Medium (default)
+    Focus: Balanced approach with moderate complexity
+    """ if not difficulty_details and not use_blooms else ""}
 
     CRITICAL: You MUST generate EXACTLY the following number of questions:
-    - Multiple Choice Questions (MCQ): {request.mcq_count} (EXACT COUNT, {difficulty_details['mcq_marks']} marks each)
-    - Short Answer Questions: {request.short_answer_count} (EXACT COUNT, {difficulty_details['short_marks']} marks each)
-    - Long Answer Questions: {request.long_answer_count} (EXACT COUNT, {difficulty_details['long_marks']} marks each)
+    - Multiple Choice Questions (MCQ): {request.mcq_count} (EXACT COUNT, {difficulty_details['mcq_marks'] if difficulty_details else 2} marks each)
+    - Short Answer Questions: {request.short_answer_count} (EXACT COUNT, {difficulty_details['short_marks'] if difficulty_details else 3} marks each)
+    - Long Answer Questions: {request.long_answer_count} (EXACT COUNT, {difficulty_details['long_marks'] if difficulty_details else 5} marks each)
     
     TOTAL QUESTIONS TO GENERATE: {request.mcq_count + request.short_answer_count + request.long_answer_count}
     
@@ -669,7 +711,7 @@ async def _generate_questions_from_topics(
         "explanation": "A comprehensive, step-by-step derivation or explanation as per NCERT methodology. MUST include all steps, formulas used, and clear reasoning that leads to the correct answer. The explanation should be detailed enough for a student to understand the complete solution process. ABSOLUTELY CRITICAL: Each explanation MUST have MULTIPLE steps (at least 3-4 steps for MCQ, 4-5 steps for short answer, and 5-6 steps for long answer questions). Each step MUST be on a separate line with clear numbering like 'Step 1:', 'Step 2:', etc. Do NOT combine multiple steps in the same paragraph. Each step must be separated by an actual newline character.",
         "images": ["Image Description 1"],
         "difficulty": "{request.difficulty}",
-        "marks": {difficulty_details['mcq_marks'] if "mcq" in "{request.difficulty}" else difficulty_details['short_marks'] if "short" in "{request.difficulty}" else difficulty_details['long_marks']}
+        "marks": {difficulty_details['mcq_marks'] if difficulty_details and "mcq" in "{request.difficulty}" else difficulty_details['short_marks'] if difficulty_details and "short" in "{request.difficulty}" else difficulty_details['long_marks'] if difficulty_details else 1}
     }}
 
     EXAMPLE MATH QUESTIONS (SHOWING DIVERSITY):
@@ -747,8 +789,13 @@ async def _generate_questions_from_topics(
         For NCERT Class 10 Mathematics questions:
         - Generate problems strictly based on NCERT Class 10 Mathematics curriculum for the topic "{topic_names}".
         - Include mathematical expressions and problems as found in NCERT textbooks and exercises.
-        - Questions should reflect the exact difficulty level: {request.difficulty} ({difficulty_details['description']}).
-        - Each question should be worth {difficulty_details['mcq_marks']} marks for MCQ, {difficulty_details['short_marks']} marks for Short Answer, and {difficulty_details['long_marks']} marks for Long Answer.
+        {"""
+        - Questions should reflect the exact difficulty level: {request.difficulty} ({difficulty_details['description'] if difficulty_details else 'medium difficulty'}).
+        - Each question should be worth {difficulty_details['mcq_marks'] if difficulty_details else 2} marks for MCQ, {difficulty_details['short_marks'] if difficulty_details else 3} marks for Short Answer, and {difficulty_details['long_marks'] if difficulty_details else 5} marks for Long Answer.
+        """ if difficulty_details else """
+        - Questions should reflect the Bloom's taxonomy level: {request.blooms_taxonomy_level} ({BLOOMS_TAXONOMY_LEVELS[request.blooms_taxonomy_level]['description']}).
+        - Each question should be worth 2 marks for MCQ, 3 marks for Short Answer, and 5 marks for Long Answer (default).
+        """}
         - REMEMBER: NEVER mention formula names (like "quadratic formula", "sum formula", etc.) or provide solution hints in the question text.
         - ENSURE DIVERSITY WITHIN THE SPECIFIC TOPIC: All questions must be directly related to the NCERT topic "{topic_names}".
           Create questions that explore different aspects, applications, and problem-solving approaches within this topic as per NCERT.
@@ -811,7 +858,11 @@ async def _generate_questions_from_topics(
     3. Each question tests a different skill or understanding within the NCERT topic.
     4. Questions are diverse in their approach, complexity, and application as per NCERT.
     5. NO questions about concepts outside the specified NCERT topic and subtopics.
-    6. All questions reflect the {request.difficulty} difficulty level ({difficulty_details['description']}).
+    {"""
+    6. All questions reflect the {request.difficulty} difficulty level ({difficulty_details['description'] if difficulty_details else 'medium difficulty'}).
+    """ if difficulty_details else """
+    6. All questions reflect the {request.blooms_taxonomy_level} Bloom's taxonomy level ({BLOOMS_TAXONOMY_LEVELS[request.blooms_taxonomy_level]['description']}).
+    """}
     7. Questions are similar to those found in NCERT Class 10 Mathematics textbook.
     8. CRITICAL: Each question has a comprehensive, accurate, and pedagogically sound explanation
        that includes all formulas used, step-by-step reasoning with each step on a SEPARATE line,
@@ -1015,12 +1066,13 @@ async def _generate_questions_from_topics(
             # If marks are not properly set, assign based on NCERT guidelines
             if marks == 1 and question_type and difficulty:
                 if difficulty in DIFFICULTY_LEVELS:
+                    difficulty_info = DIFFICULTY_LEVELS[difficulty]
                     if question_type == "mcq":
-                        marks = DIFFICULTY_LEVELS[difficulty]["mcq_marks"]
+                        marks = difficulty_info.get("mcq_marks", 2)
                     elif question_type == "short":
-                        marks = DIFFICULTY_LEVELS[difficulty]["short_marks"]
+                        marks = difficulty_info.get("short_marks", 3)
                     elif question_type == "long":
-                        marks = DIFFICULTY_LEVELS[difficulty]["long_marks"]
+                        marks = difficulty_info.get("long_marks", 5)
             
             question = models.Question(
                 id=str(uuid.uuid4()),

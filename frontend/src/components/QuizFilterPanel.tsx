@@ -26,6 +26,8 @@ export interface QuizFilters {
   difficulty?: 'easy' | 'medium' | 'hard';
   includeImagesForMCQ?: boolean;
   generateRealImages?: boolean;
+  useBloomsTaxonomy?: boolean;
+  bloomsTaxonomyLevel?: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
 }
 
 export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
@@ -47,6 +49,9 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
   const [difficulty, setDifficulty] = useState<'easy' | 'medium' | 'hard'>('easy');
   const [includeImagesForMCQ, setIncludeImagesForMCQ] = useState(false);
   const [generateRealImages, setGenerateRealImages] = useState(false);
+  const [useBloomsTaxonomy, setUseBloomsTaxonomy] = useState(false);
+  const [bloomsTaxonomyLevel, setBloomsTaxonomyLevel] = useState<'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create'>('apply');
+  const [showDifficulty, setShowDifficulty] = useState(true); // Show difficulty by default
 
   // Fetch grades on mount
   useEffect(() => {
@@ -138,7 +143,8 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
       return;
     }
 
-    onGenerate({
+    // Only pass the selected option (either difficulty or Bloom's taxonomy, not both)
+    const filters: QuizFilters = {
       board,
       grade,
       subject,
@@ -147,10 +153,22 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
       mcqCount,
       shortAnswerCount,
       longAnswerCount,
-      difficulty,
       includeImagesForMCQ,
       generateRealImages,
-    });
+    };
+
+    // Add difficulty if it's selected (and Bloom's is not)
+    if (showDifficulty && difficulty) {
+      filters.difficulty = difficulty;
+    }
+
+    // Add Bloom's taxonomy if it's selected (and difficulty is not)
+    if (useBloomsTaxonomy && bloomsTaxonomyLevel) {
+      filters.useBloomsTaxonomy = true;
+      filters.bloomsTaxonomyLevel = bloomsTaxonomyLevel;
+    }
+
+    onGenerate(filters);
   };
 
   const handleClear = () => {
@@ -161,6 +179,8 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
     setLongAnswerCount(1);
     setIncludeImagesForMCQ(false);
     setGenerateRealImages(false);
+    setUseBloomsTaxonomy(false);
+    setShowDifficulty(true);
     setDifficulty('easy');
   };
 
@@ -248,24 +268,26 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
           </motion.div>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor="difficulty">Difficulty Level (NCERT Class 10 Mathematics)</Label>
-          <Select value={difficulty} onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}>
-            <SelectTrigger id="difficulty">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="easy">Easy (1-2 marks)</SelectItem>
-              <SelectItem value="medium">Medium (3-5 marks)</SelectItem>
-              <SelectItem value="hard">Hard (5 marks)</SelectItem>
-            </SelectContent>
-          </Select>
-          <p className="text-xs text-muted-foreground">
-            {difficulty === 'easy' && 'Basic understanding and direct application of formulas'}
-            {difficulty === 'medium' && 'Multi-step problems requiring application of multiple concepts'}
-            {difficulty === 'hard' && 'Complex problems requiring analytical thinking and deeper understanding'}
-          </p>
-        </div>
+        {showDifficulty && (
+          <div className="space-y-2">
+            <Label htmlFor="difficulty">Difficulty Level (NCERT Class 10 Mathematics)</Label>
+            <Select value={difficulty} onValueChange={(v) => setDifficulty(v as 'easy' | 'medium' | 'hard')}>
+              <SelectTrigger id="difficulty">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="easy">Easy (1-2 marks)</SelectItem>
+                <SelectItem value="medium">Medium (3-5 marks)</SelectItem>
+                <SelectItem value="hard">Hard (5 marks)</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {difficulty === 'easy' && 'Basic understanding and direct application of formulas'}
+              {difficulty === 'medium' && 'Multi-step problems requiring application of multiple concepts'}
+              {difficulty === 'hard' && 'Complex problems requiring analytical thinking and deeper understanding'}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-2">
           <Label htmlFor="mcq-count">Number of MCQs</Label>
@@ -330,6 +352,56 @@ export function QuizFilterPanel({ onGenerate }: QuizFilterPanelProps) {
             with placeholder image URLs that can be replaced with actual images later.
             If "Generate actual images using AI" is checked, the system will use AI to create real images for image-based questions.
           </p>
+        </div>
+
+        <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+          <Label>Use Bloom's Taxonomy</Label>
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="use-blooms-taxonomy"
+                checked={useBloomsTaxonomy}
+                onCheckedChange={(checked) => {
+                  const isChecked = checked as boolean;
+                  setUseBloomsTaxonomy(isChecked);
+                  // If Bloom's taxonomy is enabled, disable difficulty
+                  if (isChecked) {
+                    setShowDifficulty(false);
+                  } else {
+                    setShowDifficulty(true);
+                  }
+                }}
+              />
+              <label htmlFor="use-blooms-taxonomy" className="text-sm cursor-pointer">Generate questions based on Bloom's Taxonomy</label>
+            </div>
+          </div>
+          
+          {useBloomsTaxonomy && (
+            <div className="space-y-2 mt-2">
+              <Label htmlFor="blooms-level">Bloom's Taxonomy Level</Label>
+              <Select value={bloomsTaxonomyLevel} onValueChange={(v) => setBloomsTaxonomyLevel(v as 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create')}>
+                <SelectTrigger id="blooms-level">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="remember">Remember - Recall facts and basic concepts</SelectItem>
+                  <SelectItem value="understand">Understand - Explain ideas and concepts</SelectItem>
+                  <SelectItem value="apply">Apply - Use knowledge in new situations</SelectItem>
+                  <SelectItem value="analyze">Analyze - Break down information into parts</SelectItem>
+                  <SelectItem value="evaluate">Evaluate - Justify decisions or positions</SelectItem>
+                  <SelectItem value="create">Create - Generate new products or ideas</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {bloomsTaxonomyLevel === 'remember' && 'Questions will focus on recalling facts, terms, and basic concepts.'}
+                {bloomsTaxonomyLevel === 'understand' && 'Questions will focus on explaining ideas and interpreting concepts.'}
+                {bloomsTaxonomyLevel === 'apply' && 'Questions will focus on applying knowledge to solve problems.'}
+                {bloomsTaxonomyLevel === 'analyze' && 'Questions will focus on analyzing information and exploring relationships.'}
+                {bloomsTaxonomyLevel === 'evaluate' && 'Questions will focus on justifying positions and making judgments.'}
+                {bloomsTaxonomyLevel === 'create' && 'Questions will focus on generating new ideas and creating original content.'}
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import { ResultsPanel } from "../components/ResultsPanel";
 import { QuizResults } from "../components/QuizResultsFixed";
 import { useToast } from "../hooks/use-toast";
 import * as api from "../lib/api";
+import type { QuizGenerationRequest } from "../lib/api";
 
 const QuizCreation = () => {
   const [questions, setQuestions] = useState<api.Question[]>([]);
@@ -58,15 +59,28 @@ const QuizCreation = () => {
         }
       }
       
+      // Prepare the request parameters based on which option is selected
+      const quizRequest: QuizGenerationRequest = {
+        topic_id: filters.topic,
+        mcq_count: mcqCount,
+        short_answer_count: shortAnswerCount,
+        long_answer_count: longAnswerCount,
+        subject_name: subjectName,
+        include_images: includeImages,
+        generate_real_images: filters.generateRealImages || false,
+      };
+
+      // Add either difficulty OR Bloom's taxonomy, but not both
+      if (filters.difficulty) {
+        quizRequest.difficulty = filters.difficulty;
+      } else if (filters.useBloomsTaxonomy && filters.bloomsTaxonomyLevel) {
+        quizRequest.use_blooms_taxonomy = true;
+        quizRequest.blooms_taxonomy_level = filters.bloomsTaxonomyLevel;
+      }
+
       const generatedQuestions = await api.generateQuiz(
-        filters.topic,
-        mcqCount,
-        shortAnswerCount,
-        longAnswerCount,
-        difficulty as 'easy' | 'medium' | 'hard',
-        includeImages,
-        subjectName,
-        '' // This is the 8th and final argument (the optional 'token' string).
+        quizRequest,
+        '' // This is the token argument
       );
 
       setQuestions(generatedQuestions);

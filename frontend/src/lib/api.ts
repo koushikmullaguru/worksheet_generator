@@ -148,74 +148,58 @@ export async function getTopics(chapterId: string): Promise<Topic[]> {
 }
 
 export async function generateWorksheet(
-  topicId: string,
-  mcqCount: number,
-  shortAnswerCount: number,
-  longAnswerCount: number,
-  difficulty: "easy" | "medium" | "hard",
-  includeImages: boolean,
-  subjectName: string,
+  request: QuizGenerationRequest,
   token: string
 ): Promise<Question[]> {
   return apiRequest<Question[]>("/api/generate-worksheet", {
     method: 'POST',
-    body: JSON.stringify({
-      topic_id: topicId,
-      mcq_count: mcqCount,
-      short_answer_count: shortAnswerCount,
-      long_answer_count: longAnswerCount,
-      difficulty,
-      include_images: includeImages,
-      subject_name: subjectName,
-    }),
+    body: JSON.stringify(request),
   });
 }
 
+export interface QuizGenerationRequest {
+  topic_id: string;
+  mcq_count: number;
+  short_answer_count: number;
+  long_answer_count: number;
+  difficulty?: "easy" | "medium" | "hard";
+  include_images: boolean;
+  subject_name: string;
+  generate_real_images?: boolean;
+  use_blooms_taxonomy?: boolean;
+  blooms_taxonomy_level?: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
+}
+
+export interface ExamGenerationRequest {
+  topic_ids: string[];
+  mcq_count: number;
+  short_answer_count: number;
+  long_answer_count: number;
+  difficulty?: "easy" | "medium" | "hard";
+  include_images: boolean;
+  subject_name: string;
+  generate_real_images?: boolean;
+  use_blooms_taxonomy?: boolean;
+  blooms_taxonomy_level?: 'remember' | 'understand' | 'apply' | 'analyze' | 'evaluate' | 'create';
+}
+
 export async function generateQuiz(
-  topicId: string,
-  mcqCount: number,
-  shortAnswerCount: number,
-  longAnswerCount: number,
-  difficulty: "easy" | "medium" | "hard",
-  includeImages: boolean,
-  subjectName: string,
+  request: QuizGenerationRequest,
   token: string
 ): Promise<Question[]> {
   return apiRequest<Question[]>("/api/generate-quiz", {
     method: 'POST',
-    body: JSON.stringify({
-      topic_id: topicId,
-      mcq_count: mcqCount,
-      short_answer_count: shortAnswerCount,
-      long_answer_count: longAnswerCount,
-      difficulty,
-      include_images: includeImages,
-      subject_name: subjectName,
-    }),
+    body: JSON.stringify(request),
   });
 }
 
 export async function generateExam(
-  topicIds: string[],
-  mcqCount: number,
-  shortAnswerCount: number,
-  longAnswerCount: number,
-  difficulty: "easy" | "medium" | "hard",
-  includeImages: boolean,
-  subjectName: string,
+  request: ExamGenerationRequest,
   token: string
 ): Promise<Question[]> {
   return apiRequest<Question[]>("/api/generate-exam", {
     method: 'POST',
-    body: JSON.stringify({
-      topic_ids: topicIds,
-      mcq_count: mcqCount,
-      short_answer_count: shortAnswerCount,
-      long_answer_count: longAnswerCount,
-      difficulty,
-      include_images: includeImages,
-      subject_name: subjectName,
-    }),
+    body: JSON.stringify(request),
   });
 }
 

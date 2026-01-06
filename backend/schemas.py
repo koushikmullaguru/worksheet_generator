@@ -139,10 +139,28 @@ class BaseGenerationRequest(BaseModel):
     mcq_count: int = 2
     short_answer_count: int = 2
     long_answer_count: int = 1
-    difficulty: str = "medium"
+    difficulty: Optional[str] = None  # "easy", "medium", "hard" - mutually exclusive with Bloom's taxonomy
     subject_name: Optional[str] = ""
     include_images: bool = False
     generate_real_images: bool = False
+    use_blooms_taxonomy: bool = False
+    blooms_taxonomy_level: Optional[str] = None  # "remember", "understand", "apply", "analyze", "evaluate", "create"
+    
+    class Config:
+        validate_assignment = True
+    
+    def validate(self):
+        """Ensure that difficulty and Bloom's taxonomy are mutually exclusive."""
+        if self.difficulty and self.use_blooms_taxonomy and self.blooms_taxonomy_level:
+            raise ValueError("Cannot specify both difficulty and Bloom's taxonomy level. Please choose only one.")
+        
+        # Validate difficulty value if provided
+        if self.difficulty and self.difficulty not in ["easy", "medium", "hard"]:
+            raise ValueError(f"Invalid difficulty level: {self.difficulty}. Must be 'easy', 'medium', or 'hard'.")
+        
+        # Validate Bloom's taxonomy level if provided
+        if self.blooms_taxonomy_level and self.blooms_taxonomy_level not in ["remember", "understand", "apply", "analyze", "evaluate", "create"]:
+            raise ValueError(f"Invalid Bloom's taxonomy level: {self.blooms_taxonomy_level}. Must be one of: remember, understand, apply, analyze, evaluate, create.")
     
 # 1. Worksheet Request (Standard practice tool, single topic)
 class WorksheetRequest(BaseGenerationRequest):
@@ -155,7 +173,7 @@ class QuizRequest(BaseGenerationRequest):
     mcq_count: int = 5
     short_answer_count: int = 1
     long_answer_count: int = 0  # Typically no long answers
-    difficulty: str = "easy"
+    difficulty: Optional[str] = "easy"  # Make optional to match BaseGenerationRequest
 
 # 3. Exam Request (Long, Comprehensive, Multi-Topic)
 class ExamRequest(BaseGenerationRequest):
@@ -164,7 +182,7 @@ class ExamRequest(BaseGenerationRequest):
     mcq_count: int = 10
     short_answer_count: int = 5
     long_answer_count: int = 3
-    difficulty: str = "hard" # Higher default difficulty
+    difficulty: Optional[str] = "hard" # Higher default difficulty, make optional
     name: str = "Generated Exam"
 
 # Quiz Answer schemas
